@@ -1,3 +1,4 @@
 [flake8]
-max-line-length = 88
-exclude = __pycache__,.git,venv
+max-line-length = 279
+max-complexity = 10
+exclude = __pycache__,.git,venv,.venv,.pytest_cache

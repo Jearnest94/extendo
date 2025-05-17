@@ -3,5 +3,5 @@
 __pycache__/
 docs\blueprint.txt
 tmp
-.venv
+.venv/
 node_modules/
