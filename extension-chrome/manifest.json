@@ -1,0 +1,16 @@
+{
+    "manifest_version": 3,
+    "name": "Extendo",
+    "version": "0.0.1",
+    "description": "Extendo Chrome extension.",
+    "permissions": [],
+    "background": {
+        "service_worker": "src/background.js"
+    },
+    "content_scripts": [
+        {
+            "matches": ["<all_urls>"],
+            "js": ["src/content.js"]
+        }
+    ]
+}

@@ -7,7 +7,7 @@ from flask_cors import CORS
 # Just a simple health check
 def create_app():
     app = Flask(__name__)
-    CORS(app)
+    CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
     @app.route('/api/health', methods=['GET'])
     def health():
