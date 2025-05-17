@@ -28,7 +28,7 @@ fetch("http://localhost:5000/api/prematch-info?player=ALTR_ABDI")
       html += `<b>${data.length} players:</b><br>`;
       const p = data[0];
       html += `<img src='${p.avatar || ""}' style='height:40px;border-radius:50%;vertical-align:left;margin-right:8px;'>`;
-      html += `<b>${p.nickname}</b> (ELO: <b>${p.faceit_elo || p.elo || "?"}</b>)<br>`;
+      html += `<b>${p.nickname}</b><br>`;
       html += `Country: ${p.country || ""}<br>`;
       html += `Level: ${p.skill_level || "?"}<br>`;
       html += `<a href='https://www.faceit.com/en/players/${p.nickname}' target='_blank' style='color:#4af'>Faceit Profile</a>`;

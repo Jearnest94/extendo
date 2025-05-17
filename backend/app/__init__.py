@@ -56,6 +56,7 @@ def match_room(match_id):
 
 def create_app():
     app = Flask(__name__)
+    app.debug = True
     CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
     app.add_url_rule("/api/prematch-info", view_func=prematch, methods=["GET"])
     app.add_url_rule(

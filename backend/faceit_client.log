@@ -1,0 +1,130 @@
+2025-05-17 17:06:54,526 INFO [FaceitClient] Using API key: set
+2025-05-17 17:06:54,526 INFO [FaceitClient] Session initialized with headers: {'User-Agent': 'python-requests/2.32.3', 'Accept-Encoding': 'gzip, deflate', 'Accept': '*/*', 'Connection': 'keep-alive', 'Authorization': 'Bearer dd36bb96-02e8-4e2a-9242-c5d7f3fd7024'}
+2025-05-17 17:06:54,532 INFO [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.18.0.3:5000
+2025-05-17 17:06:54,532 INFO [33mPress CTRL+C to quit[0m
+2025-05-17 17:07:16,467 INFO [prematch] Called with player_ids=['ALTR_ABDI']
+2025-05-17 17:07:16,468 INFO [FaceitClient] Using API key: set
+2025-05-17 17:07:16,468 INFO [FaceitClient] Session initialized with headers: {'User-Agent': 'python-requests/2.32.3', 'Accept-Encoding': 'gzip, deflate', 'Accept': '*/*', 'Connection': 'keep-alive', 'Authorization': 'Bearer dd36bb96-02e8-4e2a-9242-c5d7f3fd7024'}
+2025-05-17 17:07:16,469 INFO [prematch] get_stats for pid=ALTR_ABDI
+2025-05-17 17:07:16,469 INFO [FaceitClient] get_player called with nickname=ALTR_ABDI, player_id=None
+2025-05-17 17:07:16,469 INFO [FaceitClient] GET https://open.faceit.com/data/v4/players params={'nickname': 'ALTR_ABDI'} timeout=20
+2025-05-17 17:07:16,738 INFO [FaceitClient] Response status: 200
+2025-05-17 17:07:16,738 INFO [FaceitClient] Response JSON: {"player_id":"9380126a-4360-49b1-b299-aa847c0a28a2","nickname":"ALTR_ABDI","avatar":"https://distribution.faceit-cdn.net/images/3116f229-63c7-4d64-b856-51f0e8f5d87c.jpg","country":"se","cover_image":"...
+2025-05-17 17:07:16,739 INFO [prematch] Resolved player_id=9380126a-4360-49b1-b299-aa847c0a28a2
+2025-05-17 17:07:16,739 INFO [FaceitClient] player_stats called with player_id=9380126a-4360-49b1-b299-aa847c0a28a2, game=cs2
+2025-05-17 17:07:16,739 INFO [FaceitClient] GET https://open.faceit.com/data/v4/players/9380126a-4360-49b1-b299-aa847c0a28a2/stats/cs2 params={} timeout=20
+2025-05-17 17:07:16,926 INFO [FaceitClient] Response status: 200
+2025-05-17 17:07:16,926 INFO [FaceitClient] Response JSON: {"player_id":"9380126a-4360-49b1-b299-aa847c0a28a2","game_id":"cs2","lifetime":{"1v1 Win Rate":"0.42","Current Win Streak":"3","Flashes per Round":"0.82","Average Headshots %":"44","Utility Success Ra...
+2025-05-17 17:07:16,927 INFO [prematch] Returning data for 1 players
+2025-05-17 17:07:16,928 INFO 172.18.0.1 - - [17/May/2025 17:07:16] "GET /api/prematch-info?player=ALTR_ABDI HTTP/1.1" 200 -
+2025-05-17 17:07:16,963 INFO [prematch] Called with player_ids=['ALTR_ABDI']
+2025-05-17 17:07:16,963 INFO [FaceitClient] Using API key: set
+2025-05-17 17:07:16,964 INFO [FaceitClient] Session initialized with headers: {'User-Agent': 'python-requests/2.32.3', 'Accept-Encoding': 'gzip, deflate', 'Accept': '*/*', 'Connection': 'keep-alive', 'Authorization': 'Bearer dd36bb96-02e8-4e2a-9242-c5d7f3fd7024'}
+2025-05-17 17:07:16,965 INFO [prematch] get_stats for pid=ALTR_ABDI
+2025-05-17 17:07:16,965 INFO [FaceitClient] get_player called with nickname=ALTR_ABDI, player_id=None
+2025-05-17 17:07:16,965 INFO [FaceitClient] GET https://open.faceit.com/data/v4/players params={'nickname': 'ALTR_ABDI'} timeout=20
+2025-05-17 17:07:16,982 INFO 172.18.0.1 - - [17/May/2025 17:07:16] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-05-17 17:07:17,206 INFO [FaceitClient] Response status: 200
+2025-05-17 17:07:17,206 INFO [FaceitClient] Response JSON: {"player_id":"9380126a-4360-49b1-b299-aa847c0a28a2","nickname":"ALTR_ABDI","avatar":"https://distribution.faceit-cdn.net/images/3116f229-63c7-4d64-b856-51f0e8f5d87c.jpg","country":"se","cover_image":"...
+2025-05-17 17:07:17,206 INFO [prematch] Resolved player_id=9380126a-4360-49b1-b299-aa847c0a28a2
+2025-05-17 17:07:17,206 INFO [FaceitClient] player_stats called with player_id=9380126a-4360-49b1-b299-aa847c0a28a2, game=cs2
+2025-05-17 17:07:17,207 INFO [FaceitClient] GET https://open.faceit.com/data/v4/players/9380126a-4360-49b1-b299-aa847c0a28a2/stats/cs2 params={} timeout=20
+2025-05-17 17:07:17,400 INFO [FaceitClient] Response status: 200
+2025-05-17 17:07:17,401 INFO [FaceitClient] Response JSON: {"player_id":"9380126a-4360-49b1-b299-aa847c0a28a2","game_id":"cs2","lifetime":{"Total Utility Successes":"2289","Total Entry Wins":"2073","Total Flash Count":"12702","Utility Success Rate":"0.36","To...
+2025-05-17 17:07:17,401 INFO [prematch] Returning data for 1 players
+2025-05-17 17:07:17,402 INFO 172.18.0.1 - - [17/May/2025 17:07:17] "GET /api/prematch-info?player=ALTR_ABDI HTTP/1.1" 200 -
+2025-05-17 17:07:55,276 INFO [FaceitClient] Using API key: set
+2025-05-17 17:07:55,276 INFO [FaceitClient] Session initialized with headers: {'User-Agent': 'python-requests/2.32.3', 'Accept-Encoding': 'gzip, deflate', 'Accept': '*/*', 'Connection': 'keep-alive', 'Authorization': 'Bearer dd36bb96-02e8-4e2a-9242-c5d7f3fd7024'}
+2025-05-17 17:07:55,280 INFO [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.18.0.3:5000
+2025-05-17 17:07:55,280 INFO [33mPress CTRL+C to quit[0m
+2025-05-17 17:10:05,514 INFO [prematch] Called with player_ids=['ALTR_ABDI']
+2025-05-17 17:10:05,514 INFO [FaceitClient] Using API key: set
+2025-05-17 17:10:05,514 INFO [FaceitClient] Session initialized with headers: {'User-Agent': 'python-requests/2.32.3', 'Accept-Encoding': 'gzip, deflate', 'Accept': '*/*', 'Connection': 'keep-alive', 'Authorization': 'Bearer dd36bb96-02e8-4e2a-9242-c5d7f3fd7024'}
+2025-05-17 17:10:05,515 INFO [prematch] get_stats for pid=ALTR_ABDI
+2025-05-17 17:10:05,515 INFO [FaceitClient] get_player called with nickname=ALTR_ABDI, player_id=None
+2025-05-17 17:10:05,515 INFO [FaceitClient] GET https://open.faceit.com/data/v4/players params={'nickname': 'ALTR_ABDI'} timeout=20
+2025-05-17 17:10:05,751 INFO [FaceitClient] Response status: 200
+2025-05-17 17:10:05,752 INFO [FaceitClient] Response JSON: {"player_id":"9380126a-4360-49b1-b299-aa847c0a28a2","nickname":"ALTR_ABDI","avatar":"https://distribution.faceit-cdn.net/images/3116f229-63c7-4d64-b856-51f0e8f5d87c.jpg","country":"se","cover_image":"...
+2025-05-17 17:10:05,752 INFO [prematch] Resolved player_id=9380126a-4360-49b1-b299-aa847c0a28a2
+2025-05-17 17:10:05,752 INFO [FaceitClient] player_stats called with player_id=9380126a-4360-49b1-b299-aa847c0a28a2, game=cs2
+2025-05-17 17:10:05,752 INFO [FaceitClient] GET https://open.faceit.com/data/v4/players/9380126a-4360-49b1-b299-aa847c0a28a2/stats/cs2 params={} timeout=20
+2025-05-17 17:10:05,953 INFO [FaceitClient] Response status: 200
+2025-05-17 17:10:05,954 INFO [FaceitClient] Response JSON: {"player_id":"9380126a-4360-49b1-b299-aa847c0a28a2","game_id":"cs2","lifetime":{"Total Kills with extended stats":"11500","Total Rounds with extended stats":"15531","Total Utility Count":"6338","Total...
+2025-05-17 17:10:05,954 INFO [prematch] Returning data for 1 players
+2025-05-17 17:10:05,955 INFO 172.18.0.1 - - [17/May/2025 17:10:05] "GET /api/prematch-info?player=ALTR_ABDI HTTP/1.1" 200 -
+2025-05-17 17:10:05,972 INFO [prematch] Called with player_ids=['ALTR_ABDI']
+2025-05-17 17:10:05,972 INFO [FaceitClient] Using API key: set
+2025-05-17 17:10:05,972 INFO [FaceitClient] Session initialized with headers: {'User-Agent': 'python-requests/2.32.3', 'Accept-Encoding': 'gzip, deflate', 'Accept': '*/*', 'Connection': 'keep-alive', 'Authorization': 'Bearer dd36bb96-02e8-4e2a-9242-c5d7f3fd7024'}
+2025-05-17 17:10:05,973 INFO [prematch] get_stats for pid=ALTR_ABDI
+2025-05-17 17:10:05,973 INFO [FaceitClient] get_player called with nickname=ALTR_ABDI, player_id=None
+2025-05-17 17:10:05,973 INFO [FaceitClient] GET https://open.faceit.com/data/v4/players params={'nickname': 'ALTR_ABDI'} timeout=20
+2025-05-17 17:10:07,421 INFO [FaceitClient] Response status: 200
+2025-05-17 17:10:07,422 INFO [FaceitClient] Response JSON: {"player_id":"9380126a-4360-49b1-b299-aa847c0a28a2","nickname":"ALTR_ABDI","avatar":"https://distribution.faceit-cdn.net/images/3116f229-63c7-4d64-b856-51f0e8f5d87c.jpg","country":"se","cover_image":"...
+2025-05-17 17:10:07,422 INFO [prematch] Resolved player_id=9380126a-4360-49b1-b299-aa847c0a28a2
+2025-05-17 17:10:07,422 INFO [FaceitClient] player_stats called with player_id=9380126a-4360-49b1-b299-aa847c0a28a2, game=cs2
+2025-05-17 17:10:07,422 INFO [FaceitClient] GET https://open.faceit.com/data/v4/players/9380126a-4360-49b1-b299-aa847c0a28a2/stats/cs2 params={} timeout=20
+2025-05-17 17:10:07,613 INFO [FaceitClient] Response status: 200
+2025-05-17 17:10:07,614 INFO [FaceitClient] Response JSON: {"player_id":"9380126a-4360-49b1-b299-aa847c0a28a2","game_id":"cs2","lifetime":{"Total 1v2 Wins":"64","Entry Success Rate":"0.52","Total Kills with extended stats":"11500","Sniper Kill Rate per Round"...
+2025-05-17 17:10:07,614 INFO [prematch] Returning data for 1 players
+2025-05-17 17:10:07,615 INFO 172.18.0.1 - - [17/May/2025 17:10:07] "GET /api/prematch-info?player=ALTR_ABDI HTTP/1.1" 200 -
+2025-05-17 17:10:08,570 INFO 172.18.0.1 - - [17/May/2025 17:10:08] "OPTIONS /api/prematch-info?player=ALTR_ABDI HTTP/1.1" 200 -
+2025-05-17 17:10:08,573 INFO [prematch] Called with player_ids=['ALTR_ABDI']
+2025-05-17 17:10:08,574 INFO [FaceitClient] Using API key: set
+2025-05-17 17:10:08,574 INFO [FaceitClient] Session initialized with headers: {'User-Agent': 'python-requests/2.32.3', 'Accept-Encoding': 'gzip, deflate', 'Accept': '*/*', 'Connection': 'keep-alive', 'Authorization': 'Bearer dd36bb96-02e8-4e2a-9242-c5d7f3fd7024'}
+2025-05-17 17:10:08,575 INFO [prematch] get_stats for pid=ALTR_ABDI
+2025-05-17 17:10:08,575 INFO [FaceitClient] get_player called with nickname=ALTR_ABDI, player_id=None
+2025-05-17 17:10:08,575 INFO [FaceitClient] GET https://open.faceit.com/data/v4/players params={'nickname': 'ALTR_ABDI'} timeout=20
+2025-05-17 17:10:08,803 INFO [FaceitClient] Response status: 200
+2025-05-17 17:10:08,803 INFO [FaceitClient] Response JSON: {"player_id":"9380126a-4360-49b1-b299-aa847c0a28a2","nickname":"ALTR_ABDI","avatar":"https://distribution.faceit-cdn.net/images/3116f229-63c7-4d64-b856-51f0e8f5d87c.jpg","country":"se","cover_image":"...
+2025-05-17 17:10:08,803 INFO [prematch] Resolved player_id=9380126a-4360-49b1-b299-aa847c0a28a2
+2025-05-17 17:10:08,804 INFO [FaceitClient] player_stats called with player_id=9380126a-4360-49b1-b299-aa847c0a28a2, game=cs2
+2025-05-17 17:10:08,804 INFO [FaceitClient] GET https://open.faceit.com/data/v4/players/9380126a-4360-49b1-b299-aa847c0a28a2/stats/cs2 params={} timeout=20
+2025-05-17 17:10:08,992 INFO [FaceitClient] Response status: 200
+2025-05-17 17:10:08,994 INFO [FaceitClient] Response JSON: {"player_id":"9380126a-4360-49b1-b299-aa847c0a28a2","game_id":"cs2","lifetime":{"Total Utility Damage":"84641","Total 1v1 Wins":"132","K/D Ratio":"1816.44","Total Utility Successes":"2289","Win Rate %...
+2025-05-17 17:10:08,995 INFO [prematch] Returning data for 1 players
+2025-05-17 17:10:08,996 INFO 172.18.0.1 - - [17/May/2025 17:10:08] "GET /api/prematch-info?player=ALTR_ABDI HTTP/1.1" 200 -
+2025-05-17 17:12:49,191 INFO 172.18.0.1 - - [17/May/2025 17:12:49] "OPTIONS /api/prematch-info?player=ALTR_ABDI HTTP/1.1" 200 -
+2025-05-17 17:12:49,193 INFO [prematch] Called with player_ids=['ALTR_ABDI']
+2025-05-17 17:12:49,194 INFO [FaceitClient] Using API key: set
+2025-05-17 17:12:49,194 INFO [FaceitClient] Session initialized with headers: {'User-Agent': 'python-requests/2.32.3', 'Accept-Encoding': 'gzip, deflate', 'Accept': '*/*', 'Connection': 'keep-alive', 'Authorization': 'Bearer dd36bb96-02e8-4e2a-9242-c5d7f3fd7024'}
+2025-05-17 17:12:49,194 INFO [prematch] get_stats for pid=ALTR_ABDI
+2025-05-17 17:12:49,194 INFO [FaceitClient] get_player called with nickname=ALTR_ABDI, player_id=None
+2025-05-17 17:12:49,195 INFO [FaceitClient] GET https://open.faceit.com/data/v4/players params={'nickname': 'ALTR_ABDI'} timeout=20
+2025-05-17 17:12:49,434 INFO [FaceitClient] Response status: 200
+2025-05-17 17:12:49,434 INFO [FaceitClient] Response JSON: {"player_id":"9380126a-4360-49b1-b299-aa847c0a28a2","nickname":"ALTR_ABDI","avatar":"https://distribution.faceit-cdn.net/images/3116f229-63c7-4d64-b856-51f0e8f5d87c.jpg","country":"se","cover_image":"...
+2025-05-17 17:12:49,434 INFO [prematch] Resolved player_id=9380126a-4360-49b1-b299-aa847c0a28a2
+2025-05-17 17:12:49,434 INFO [FaceitClient] player_stats called with player_id=9380126a-4360-49b1-b299-aa847c0a28a2, game=cs2
+2025-05-17 17:12:49,435 INFO [FaceitClient] GET https://open.faceit.com/data/v4/players/9380126a-4360-49b1-b299-aa847c0a28a2/stats/cs2 params={} timeout=20
+2025-05-17 17:12:49,619 INFO [FaceitClient] Response status: 200
+2025-05-17 17:12:49,619 INFO [FaceitClient] Response JSON: {"player_id":"9380126a-4360-49b1-b299-aa847c0a28a2","game_id":"cs2","lifetime":{"Utility Success Rate":"0.36","K/D Ratio":"1816.44","Total Sniper Kills":"308","Matches":"1741","Total Headshots %":"771...
+2025-05-17 17:12:49,620 INFO [prematch] Returning data for 1 players
+2025-05-17 17:12:49,621 INFO 172.18.0.1 - - [17/May/2025 17:12:49] "GET /api/prematch-info?player=ALTR_ABDI HTTP/1.1" 200 -
+2025-05-17 17:12:52,870 INFO [FaceitClient] Using API key: set
+2025-05-17 17:12:52,871 INFO [FaceitClient] Session initialized with headers: {'User-Agent': 'python-requests/2.32.3', 'Accept-Encoding': 'gzip, deflate', 'Accept': '*/*', 'Connection': 'keep-alive', 'Authorization': 'Bearer dd36bb96-02e8-4e2a-9242-c5d7f3fd7024'}
+2025-05-17 17:12:52,875 INFO [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.18.0.3:5000
+2025-05-17 17:12:52,875 INFO [33mPress CTRL+C to quit[0m
+2025-05-17 17:12:59,631 INFO 172.18.0.1 - - [17/May/2025 17:12:59] "OPTIONS /api/prematch-info?player=ALTR_ABDI HTTP/1.1" 200 -
+2025-05-17 17:12:59,634 INFO [prematch] Called with player_ids=['ALTR_ABDI']
+2025-05-17 17:12:59,634 INFO [FaceitClient] Using API key: set
+2025-05-17 17:12:59,634 INFO [FaceitClient] Session initialized with headers: {'User-Agent': 'python-requests/2.32.3', 'Accept-Encoding': 'gzip, deflate', 'Accept': '*/*', 'Connection': 'keep-alive', 'Authorization': 'Bearer dd36bb96-02e8-4e2a-9242-c5d7f3fd7024'}
+2025-05-17 17:12:59,635 INFO [prematch] get_stats for pid=ALTR_ABDI
+2025-05-17 17:12:59,635 INFO [FaceitClient] get_player called with nickname=ALTR_ABDI, player_id=None
+2025-05-17 17:12:59,635 INFO [FaceitClient] GET https://open.faceit.com/data/v4/players params={'nickname': 'ALTR_ABDI'} timeout=20
+2025-05-17 17:12:59,867 INFO [FaceitClient] Response status: 200
+2025-05-17 17:12:59,867 INFO [FaceitClient] Response JSON: {"player_id":"9380126a-4360-49b1-b299-aa847c0a28a2","nickname":"ALTR_ABDI","avatar":"https://distribution.faceit-cdn.net/images/3116f229-63c7-4d64-b856-51f0e8f5d87c.jpg","country":"se","cover_image":"...
+2025-05-17 17:12:59,867 INFO [prematch] Resolved player_id=9380126a-4360-49b1-b299-aa847c0a28a2
+2025-05-17 17:12:59,867 INFO [FaceitClient] player_stats called with player_id=9380126a-4360-49b1-b299-aa847c0a28a2, game=cs2
+2025-05-17 17:12:59,868 INFO [FaceitClient] GET https://open.faceit.com/data/v4/players/9380126a-4360-49b1-b299-aa847c0a28a2/stats/cs2 params={} timeout=20
+2025-05-17 17:13:00,049 INFO [FaceitClient] Response status: 200
+2025-05-17 17:13:00,049 INFO [FaceitClient] Response JSON: {"player_id":"9380126a-4360-49b1-b299-aa847c0a28a2","game_id":"cs2","lifetime":{"Flashes per Round":"0.82","Utility Damage per Round":"5.45","Utility Usage per Round":"0.41","Average Headshots %":"44"...
+2025-05-17 17:13:00,050 INFO [prematch] Returning data for 1 players
+2025-05-17 17:13:00,051 INFO 172.18.0.1 - - [17/May/2025 17:13:00] "GET /api/prematch-info?player=ALTR_ABDI HTTP/1.1" 200 -

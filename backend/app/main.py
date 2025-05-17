@@ -2,7 +2,7 @@
 # FLASK api
 
 
-import logging
+import logging, os
 from flask_cors import CORS
 from flask import Flask, jsonify, request
 from .faceit import FaceitClient
@@ -94,6 +94,7 @@ def match_room(match_id):
 # Just a simple health check
 def create_app():
     app = Flask(__name__)
+
     CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
     fc = FaceitClient()
 
