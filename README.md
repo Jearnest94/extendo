@@ -1,3 +1,5 @@
+![Extendo banner](docs/extendo-banner.png)
+
 Extendo  —  Scout smarter, not harder
 
     A lightweight Chrome side-kick that keeps the heavy analytics on the server.
