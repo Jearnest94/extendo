@@ -1,4 +1,4 @@
-<img src="EXTENDO.png" alt="Extendo banner" height="220">
+<img src="EXTENDO.png" alt="Extendo banner" height="350">
 
 Extendo  —  Scout smarter, not harder
 
