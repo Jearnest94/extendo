@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from datetime import datetime
 from pathlib import Path
 
 EXCLUDE = {".git", "__pycache__", "node_modules", ".venv", ".pytest_cache"}
@@ -16,6 +17,22 @@ def walk(base: Path, prefix: str = "") -> None:
 
 
 if __name__ == "__main__":
+    # Put a timestamp in the filename.
+    # This is a bit of a hack, but it works.
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     root = Path(".").resolve()
     print(f"{root.name}/")
-    walk(root)
+    # Write to file as well.
+    i = 1
+    while True:
+        filename = f"tmp/tree_{timestamp}_{i}.txt"
+        if not Path(filename).exists():
+            break
+        i += 1
+    import sys
+
+    with open(filename, "w") as f:
+        f.write(f"{root.name}/\n")
+        sys.stdout = f
+        walk(root)
