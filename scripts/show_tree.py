@@ -20,7 +20,7 @@ if __name__ == "__main__":
     # Put a timestamp in the filename.
     # This is a bit of a hack, but it works.
 
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M")
     root = Path(".").resolve()
     print(f"{root.name}/")
     # Write to file as well.

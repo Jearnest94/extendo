@@ -1,7 +1,10 @@
 services:
   api:
     restart: always
-    build: ./backend
+    # Backend istället för .    ???
+    build: .
+    environment:
+      - FACEIT_API_KEY=${FACEIT_API_KEY}
     ports: ["5000:5000"]
     volumes: ["./backend:/app"]
     depends_on: [mongo]
@@ -9,3 +12,5 @@ services:
     image: mongo:7
     ports: ["27017:27017"]
     restart: always
+    volumes: ["mongo:/data/db"]
+volumes: { mongo: {} }
