@@ -8,15 +8,17 @@
 ## Overview
 
 Extendo pairs a Chrome extension with a Flask + MongoDB backend to turn every Faceit CS2 match-room into an instant scouting report—map-veto advice, player dossiers, utility habits—all before the knife round ends.
-Key Features
-Feature	What it gives you
-Map-veto wizard	Picks their pain points and your comfort pick.
-Player dossiers	CT spots, entry %s, AWP addiction, nade spam stats.
-Real-time results	Multi-core demo parsing + caching ⇒ answers in seconds.
-One-command dev loop	docker-compose up spins Flask & Mongo while the extension hot-reloads.
-CI that screams early	GitHub Actions: black → isort → flake8 → pytest → npm test → Docker build.
+
+## Key Features
+1. Map-veto wizard	Picks their pain points and your comfort pick.
+2. Player dossiers	CT spots, entry %s, AWP addiction, nade spam stats.
+3. Real-time results	***Multi-core demo parsing + caching ⇒ answers in seconds.***
+3. ****Resulting in ___ Heatmaps that WIN GAMES....****
 
 ## Tech Stack
+
+One-command dev loop	docker-compose up spins Flask & Mongo while the extension hot-reloads.
+CI that screams early	GitHub Actions: black → isort → flake8 → pytest → npm test → Docker build.
 
     Frontend — Chrome Extension (Vanilla JS or Vue/Vite)
     Backend — Python 3.11, Flask, Gunicorn
@@ -31,12 +33,16 @@ CI that screams early	GitHub Actions: black → isort → flake8 → pytest → 
 |-------|---------------|
 | **Health endpoint** | `GET /api/health` → `{"status":"ok"}` |
 | **Faceit client** | Python wrapper (`faceit.py`) with tiny LRU cache; tested against live API (`pytest` passes). |
-| **Chrome extension** | Injects a banner with the health-check result on any page (see `content.js`). |
+| **Docker** | `docker-compose up` spins Flask on **:5000** and MongoDB on **:27017**. |
+| **Frontend** | Chrome Extension (vanilla JS, will migrate to Vite when useful |
+| **Chrome extension** | Injects a banner with the health-check result on any page (see `content.js`; vanilla JS; Vite migration planned). |
+| **Database** | MongoDB 7 container ready (stats persistence TBD). |
+| **Data crunching** | `awpy` / `demoinfocs-golang` (Rust) – *planned, not wired yet*. |
 | **CI / linting** | `black`, `isort`, `flake8`, `pytest`, `vitest` – wired via `pre-commit` + GitHub Actions. |
-| **Docker stuff** | `docker-compose up` spins Flask on **:5000** and MongoDB on **:27017** (Mongo’s there for future stats; unused right now). |
+| **CI/CD hooks** | Pre-commit enforces formatting; Actions fail fast on any red test or linter error. |
 | **Tests** | 3 Python tests for Faceit client, 1 JS dummy test – all green. |
 
-Anything not in that table is aspirational marketing and will 404 if you look for it.
+_Anything not in that table is aspirational marketing and will 404 if you look for it._
 
 ## Quick Start
 
