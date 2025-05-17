@@ -28,7 +28,7 @@ cd extendo
 docker-compose up           # backend on :5000, Mongo on :27017
 
 # Load the extension:
-# Chrome → Extensions → Developer mode → “Load unpacked” → select extension-chrome/
+Chrome → Extensions → Developer mode → “Load unpacked” → select extension-chrome/
 open https://faceit.com/match/<id>   # watch the magic
 
 Health check:
