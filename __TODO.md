@@ -1,1 +1,3 @@
 - 2 requirementsfiler
+- kolla mappio
+- config mongo kompass
