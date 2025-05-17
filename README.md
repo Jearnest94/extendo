@@ -1,4 +1,5 @@
 ![Extendo banner](EXTENDO.png)
+<img src="EXTENDO.png" alt="Extendo banner" height="150">
 
 Extendo  —  Scout smarter, not harder
 
