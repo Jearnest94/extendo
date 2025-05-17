@@ -15,8 +15,8 @@ ENV FLASK_APP=app.main:create_app
 # Set the environment variable for Flask to run in development mode
 ENV FLASK_ENV=development
 # Run the application
-CMD ["flask", "run", "--host=0.0.0.0", "--port=8000"]
+CMD ["flask", "run", "--host=0.0.0.0", "--port=5000"]
 # Use the following command to build the Docker image
 # docker build -t backend:latest .
 # Use the following command to run the Docker container
-# docker run -p 8000:8000 backend:latest
+# docker run -p 5000:5000 backend:latest
