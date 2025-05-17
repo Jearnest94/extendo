@@ -13,7 +13,9 @@ Extendo pairs a Chrome extension with a Flask + MongoDB backend to turn every Fa
 1. Map-veto wizard	Picks their pain points and your comfort pick.
 2. Player dossiers	CT spots, entry %s, AWP addiction, nade spam stats.
 3. Real-time results	***Multi-core demo parsing + caching ⇒ answers in seconds.***
-3. ****Resulting in ___ Heatmaps that WIN GAMES....****
+3. ****Resulting in decisive heatmaps that WIN GAMES…****
+
+     ##### seriously
 
 ## Tech Stack
 
