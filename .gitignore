@@ -1,0 +1,7 @@
+.env
+.vscode
+__pycache__/
+docs\blueprint.txt
+tmp
+.venv
+node_modules/
