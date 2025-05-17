@@ -1,4 +1,4 @@
-![Extendo banner](docs/extendo-banner.png)
+![Extendo banner](EXTENDO.png)
 
 Extendo  —  Scout smarter, not harder
 
