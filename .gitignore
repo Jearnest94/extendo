@@ -5,3 +5,4 @@ docs\blueprint.txt
 tmp
 .venv/
 node_modules/
+backend/venv/

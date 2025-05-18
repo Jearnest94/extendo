@@ -1,0 +1,36 @@
+/* extension-chrome/style.css */
+:root {
+  font-family: 'Inter', 'Roboto', 'Arial', sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+}
+body, #root, .extendo-root {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 18px 16px;
+  box-sizing: border-box;
+}
+
+/* Banner tweaks for injected UI */
+.extendo-faceit-banner {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  width: 33%;
+  max-height: 50vh;
+  overflow-y: auto;
+  background: #222;
+  color: #fff;
+  z-index: 9999;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  font-size: 1em;
+  line-height: 1.45;
+  font-family: inherit;
+}
+
+.extendo-faceit-banner.extendo-faceit-banner-error {
+  background: #a00;
+  color: #fff;
+  text-align: left;
+}

@@ -1,7 +1,6 @@
 # Backend: /api/health returns {"status":"ok"}.
 # FLASK api
 
-
 import logging, os
 from flask_cors import CORS
 from flask import Flask, jsonify, request

@@ -9,12 +9,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application code into the container
 COPY . .
 # Expose the port the app runs on
-EXPOSE 8000
+EXPOSE 5000
 # Set the environment variable for Flask
 ENV FLASK_APP=app.main:create_app
 # Set the environment variable for Flask to run in development mode
 ENV FLASK_ENV=development
-ENV FLASK_DEBUG=1
+ENV FLASK_DEBUG=1   
 # Run the application
 CMD ["flask", "run", "--host=0.0.0.0", "--port=5000"]
 # Use the following command to build the Docker image

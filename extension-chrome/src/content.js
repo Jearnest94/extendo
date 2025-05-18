@@ -1,27 +1,39 @@
 // Entry point for the Chrome extension content script
+
+// Inject global stylesheet for extension UI polish
+
+function injectExtendoStylesheet() {
+  if (document.getElementById('extendo-style')) return;
+  const style = document.createElement('link');
+  style.id = 'extendo-style';
+  style.rel = 'stylesheet';
+  style.type = 'text/css';
+  style.href = chrome.runtime.getURL('style.css');
+  document.head.appendChild(style);
+}
+
+function removeExistingBanner() {
+  const old = document.querySelector('.extendo-faceit-banner');
+  if (old) old.remove();
+}
+
+injectExtendoStylesheet();
+
 console.log("Extension content script loaded.");
 
 // Call backend Faceit proof-of-concept endpoint and show result in a banner
 
-fetch("http://localhost:5000/api/prematch-info?player=ALTR_ABDI")
-  .then((r) => r.json())
-  .then((data) => {
-    const banner = document.createElement("div");
-    banner.style.position = "fixed";
-    banner.style.bottom = "0";
-    banner.style.right = "0";
-    banner.style.width = "33%";
-    banner.style.maxHeight = "50vh";
-    banner.style.overflowY = "auto";
-    banner.style.background = "#222";
-    banner.style.color = "#fff";
-    banner.style.zIndex = "9999";
-    banner.style.textAlign = "center";
-    banner.style.fontSize = "18px";
-    banner.style.padding = "10px 0";
-    banner.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
 
-    // Format Faceit data nicely
+removeExistingBanner();
+fetch("http://localhost:5000/api/prematch-info?player=ALTR_ABDI")
+  .then((r) => {
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+  })
+  .then((data) => {
+    removeExistingBanner();
+    const banner = document.createElement("div");
+    banner.className = "extendo-faceit-banner";
     let html = "<b>Faceit POC:</b><br>";
     if (Array.isArray(data) && data.length && data[0].nickname) {
       console.log("Faceit data:", data);
@@ -32,26 +44,19 @@ fetch("http://localhost:5000/api/prematch-info?player=ALTR_ABDI")
       html += `Country: ${p.country || ""}<br>`;
       html += `Level: ${p.skill_level || "?"}<br>`;
       html += `<a href='https://www.faceit.com/en/players/${p.nickname}' target='_blank' style='color:#4af'>Faceit Profile</a>`;
-    } else {
+    } else if (data && Object.keys(data).length) {
       html += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+    } else {
+      html += `<i>No data available.</i>`;
     }
     banner.innerHTML = html;
     document.body.appendChild(banner);
   })
   .catch((err) => {
+    removeExistingBanner();
     console.error("Error fetching Faceit data:", err);
     const banner = document.createElement("div");
+    banner.className = "extendo-faceit-banner extendo-faceit-banner-error";
     banner.textContent = `Faceit POC error: ${err}`;
-    banner.style.position = "fixed";
-    banner.style.bottom = "0";
-    banner.style.right = "0";
-    banner.style.width = "33%";
-    banner.style.background = "#a00";
-    banner.style.color = "#fff";
-    banner.style.zIndex = "9999";
-    banner.style.textAlign = "left";
-    banner.style.fontSize = "20px";
-    banner.style.padding = "10px 0";
-    banner.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
     document.body.appendChild(banner);
   });
