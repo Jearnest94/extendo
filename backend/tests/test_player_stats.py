@@ -152,6 +152,46 @@ def test_player_stats_post_with_json(client):
 
 
 @responses.activate
+def test_player_stats_post_with_lowercase_adr_field(client):
+    """Test the POST method with 'adr' (lowercase) field in stats"""
+    responses.add(
+        responses.GET,
+        f"{BASE_URL}/players",
+        json={"player_id": "player3_id", "nickname": "player3"},
+        status=200,
+        match=[responses.matchers.query_param_matcher({"nickname": "player3"})]
+    )
+    responses.add(
+        responses.GET,
+        f"{BASE_URL}/players/player3_id/stats/cs2",
+        json={
+            "lifetime": {
+                "adr": "70.1",  # Using lowercase 'adr' field name
+                "Matches": "50",
+                "Win Rate %": "45.0"
+            }
+        },
+        status=200
+    )
+
+    response = client.post(
+        "/api/player-stats",
+        data=json.dumps({"players": ["player3"]}),
+        content_type="application/json"
+    )
+
+    assert response.status_code == 200
+    data = json.loads(response.data)
+    assert isinstance(data, list)
+    assert len(data) == 1
+    
+    player3 = data[0]
+    assert player3["nickname"] == "player3"
+    assert player3["player_id"] == "player3_id"
+    assert player3["adr"] == "70.1"
+
+
+@responses.activate
 def test_player_stats_partial_failure(client):
     """Test handling partial failures (one player succeeds, one fails)"""
     # Mock the player lookup endpoint for first player
