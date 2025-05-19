@@ -49,8 +49,31 @@ console.log("Extension content script loaded.");
 // Call backend Faceit proof-of-concept endpoint and show result in a banner
 
 removeExistingBanner();
-// Fetch multiple players to demonstrate the capability
-fetch("http://localhost:5000/api/prematch-info?player=ALTR_ABDI&player=slumbert")
+
+// Loading state
+const loadingBanner = document.createElement("div");
+loadingBanner.className = "extendo-faceit-banner";
+loadingBanner.innerHTML = `
+  <div class="extendo-header">
+    <h2>Loading Players...</h2>
+  </div>
+  <div class="extendo-loading">
+    <div class="extendo-spinner"></div>
+    <p>Fetching player statistics...</p>
+  </div>
+`;
+document.body.appendChild(loadingBanner);
+
+// Fetch multiple players using the new JSON-based API
+fetch("http://localhost:5000/api/player-stats", {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    players: ["ALTR_ABDI", "s1mple"]
+  })
+})
   .then((r) => {
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     return r.json();
@@ -221,7 +244,7 @@ fetch("http://localhost:5000/api/prematch-info?player=ALTR_ABDI&player=slumbert"
       <div class="extendo-error">
         <h3>Error</h3>
         <p>Failed to fetch Faceit data: ${err.message}</p>
-        <p>Make sure the backend server is running at http://localhost:5000</p>
+        <p>Make sure the backend server is running at <a>http://localhost:5000</a></p>
       </div>
     `;
     document.body.appendChild(banner);

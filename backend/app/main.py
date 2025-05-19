@@ -58,32 +58,63 @@ def get_player_data_for_nickname(fc: FaceitClient, nickname: str) -> dict | None
         return {"nickname": nickname, "error": str(e), "details": "Generic error during data retrieval."}
 
 # Route implementations (moved from __init__.py and completed)
-def prematch():
-    player_nicknames = request.args.getlist("player") # Assuming these are nicknames
-    logger.info(f"[prematch] Called with player_nicknames={player_nicknames}")
+def player_stats():
+    """
+    Endpoint for fetching player statistics.
+    
+    Accepts a JSON body with a list of player nicknames:
+    {
+        "players": ["nickname1", "nickname2", ...]
+    }
+    
+    Returns a list of player data, maintaining partial results if some players fail.
+    """
+    if request.method == 'GET':
+        # Legacy support for query parameters
+        player_nicknames = request.args.getlist("player")
+        logger.info(f"[player_stats] Called with GET. Headers: {dict(request.headers)}, player_nicknames={player_nicknames}")
+    else:
+        # New JSON body approach
+        data = request.get_json(silent=True) or {}
+        player_nicknames = data.get("players", [])
+        logger.info(f"[player_stats] Called with POST, player_nicknames={player_nicknames}")
+    
     if not player_nicknames:
-        logger.warning("[prematch] No player nicknames provided")
+        logger.warning("[player_stats] No player nicknames provided")
         return jsonify({"error": "No player nicknames provided"}), 400
     
     fc = FaceitClient() # Initialize client once
     
     all_player_data = []
-    # Using ThreadPoolExecutor to fetch player data in parallel
-    # Each call to get_player_data_for_nickname will handle one nickname
+    # Using ThreadPoolExecutor to fetch player data in parallel with partial-failure semantics
+    # Each call to get_player_data_for_nickname will handle one nickname and return error info if it fails
     with ThreadPoolExecutor(max_workers=len(player_nicknames) or 1) as pool:
         # Pass fc instance to the worker function
         results = list(pool.map(lambda nickname: get_player_data_for_nickname(fc, nickname), player_nicknames))
     
     for data in results:
-        if data: # Filter out None results if any (though current helper returns a dict with error)
+        if data: # Include all results, even error responses
             all_player_data.append(data)
 
     if not all_player_data:
-        logger.warning(f"[prematch] No data successfully fetched for nicknames: {player_nicknames}")
-        # Return 200 with empty list or error? For now, let's return what we got, even if it's errors.
+        logger.warning(f"[player_stats] No data fetched for any nicknames: {player_nicknames}")
+        return jsonify({"error": "Failed to fetch data for any players"}), 500
     
-    logger.info(f"[prematch] Successfully processed {len(all_player_data)} players.")
+    # Extract and include ADR in the player data
+    for player in all_player_data:
+        if "stats" in player and "lifetime" in player["stats"]:
+            lifetime_stats = player["stats"].get("lifetime", {})
+            player["adr"] = lifetime_stats.get("Average Damage per Round") or lifetime_stats.get("ADR") or "N/A"
+    
+    logger.info(f"[player_stats] Successfully processed {len(all_player_data)} players.")
     return jsonify(all_player_data)
+
+
+# Legacy route name, redirect to player_stats
+def prematch():
+    """Legacy endpoint, redirects to player_stats"""
+    logger.info(f"[prematch] Legacy endpoint called. Headers: {dict(request.headers)}, redirecting to player_stats")
+    return player_stats()
 
 
 def _extract_adr(stats_data: dict) -> list:
@@ -224,7 +255,8 @@ def create_app():
     CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
     # Register routes
-    app.add_url_rule("/api/prematch-info", view_func=prematch, methods=["GET"])
+    app.add_url_rule("/api/player-stats", view_func=player_stats, methods=["GET", "POST"])
+    app.add_url_rule("/api/prematch-info", view_func=prematch, methods=["GET"])  # Legacy route
     app.add_url_rule("/api/match-room/<match_id>", view_func=match_room, methods=["GET"])
 
     @app.route("/")

@@ -1,4 +1,4 @@
-from app.main import create_app
+from backend.app.main import create_app
 
 
 def test_health():

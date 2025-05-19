@@ -1,12 +1,10 @@
 .env
 .vscode
 __pycache__/
-docs/blueprint.txt
+docs\blueprint.txt
 tmp
+.venv/
 node_modules/
 backend/venv/
-*.log
-prematch-info.json
-repo-structure.txt
-backend/faceit_client.log
+backend/backend_app.log
 /backend/faceit_client.log

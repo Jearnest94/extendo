@@ -3,7 +3,7 @@ import os
 import pytest
 import responses
 import time  # Added for rate limit reset testing
-from app.faceit import FaceitClient, FaceitHTTPError, FaceitRateLimitError  # Ensure this import is correct
+from backend.app.faceit import FaceitClient, FaceitHTTPError, FaceitRateLimitError  # Ensure this import is correct
 
 BASE_URL = FaceitClient.BASE_URL
 
