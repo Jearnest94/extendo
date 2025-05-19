@@ -3,7 +3,7 @@ import os
 import pytest
 import responses
 import time  # Added for rate limit reset testing
-from app.faceit import FaceitClient, FaceitHTTPError, FaceitRateLimitError
+from app.faceit import FaceitClient, FaceitHTTPError, FaceitRateLimitError  # Ensure this import is correct
 
 BASE_URL = FaceitClient.BASE_URL
 
@@ -17,6 +17,11 @@ def client():
 @pytest.fixture
 def fc():
     return FaceitClient(api_key="dummy_key")
+
+
+@pytest.fixture
+def no_sleep(monkeypatch):
+    monkeypatch.setattr(time, "sleep", lambda x: None)
 
 
 @responses.activate
@@ -99,7 +104,8 @@ def test_get_player_stats_ok(fc):
 
 
 @responses.activate
-def test_rate_limit_retry_success_with_header(fc):
+@pytest.mark.usefixtures("no_sleep")  # Apply the no_sleep fixture
+def test_rate_limit_retry_success_with_header(fc):  # Removed monkeypatch
     # Simulate X-Rate-Limit-Reset header
     reset_time = str(int(time.time()) + 2)  # 2 seconds from now
     responses.add(
@@ -118,7 +124,8 @@ def test_rate_limit_retry_success_with_header(fc):
 
 
 @responses.activate
-def test_rate_limit_retry_success_no_header(fc):
+@pytest.mark.usefixtures("no_sleep")  # Apply the no_sleep fixture
+def test_rate_limit_retry_success_no_header(fc):  # Removed monkeypatch
     # Simulate no X-Rate-Limit-Reset header, should use backoff factor
     responses.add(responses.GET, f"{BASE_URL}/players/abcde", status=429)
     responses.add(
@@ -131,7 +138,8 @@ def test_rate_limit_retry_success_no_header(fc):
 
 
 @responses.activate
-def test_rate_limit_exceeded(fc):
+@pytest.mark.usefixtures("no_sleep")  # Apply the no_sleep fixture
+def test_rate_limit_exceeded(fc):  # Removed monkeypatch
     # Simulate multiple 429 responses to exceed MAX_RETRIES (default 5 in _get)
     for i in range(5):
         # Vary reset time slightly to ensure it's not a static value causing issues if logic is flawed

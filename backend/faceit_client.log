@@ -1,1 +1,157 @@
 
+2025-05-18 20:26:38,583 INFO Flask app created successfully.
+2025-05-18 20:26:38,608 INFO [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.23.0.3:5000
+2025-05-18 20:26:38,608 INFO [33mPress CTRL+C to quit[0m
+2025-05-18 20:26:38,610 INFO  * Restarting with stat
+2025-05-18 20:26:38,757 INFO Flask app created successfully.
+2025-05-18 20:26:38,764 WARNING  * Debugger is active!
+2025-05-18 20:26:38,765 INFO  * Debugger PIN: 121-553-712
+2025-05-18 20:29:08,863 INFO Flask app created successfully.
+2025-05-18 20:29:08,891 INFO [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.23.0.3:5000
+2025-05-18 20:29:08,891 INFO [33mPress CTRL+C to quit[0m
+2025-05-18 20:29:08,891 INFO  * Restarting with stat
+2025-05-18 20:29:09,021 INFO Flask app created successfully.
+2025-05-18 20:29:09,027 WARNING  * Debugger is active!
+2025-05-18 20:29:09,027 INFO  * Debugger PIN: 121-553-712
+2025-05-18 20:29:42,801 INFO [/api/health] Health check accessed
+2025-05-18 20:29:42,801 INFO 172.23.0.1 - - [18/May/2025 20:29:42] "GET /api/health HTTP/1.1" 200 -
+2025-05-18 20:29:47,847 INFO 172.23.0.1 - - [18/May/2025 20:29:47] "OPTIONS /api/prematch-info?player=ALTR_ABDI HTTP/1.1" 200 -
+2025-05-18 20:29:47,853 INFO [prematch] Called with player_ids=['ALTR_ABDI']
+2025-05-18 20:29:47,853 INFO [FaceitClient] Using API key: set
+2025-05-18 20:29:47,853 INFO [FaceitClient] Session initialized with headers: {'User-Agent': 'python-requests/2.32.3', 'Accept-Encoding': 'gzip, deflate', 'Accept': '*/*', 'Connection': 'keep-alive', 'Authorization': 'Bearer e8f816bc-89ba-4346-b5df-277f6f529535'} and retry adapter
+2025-05-18 20:29:47,854 INFO get_player_stats called with player_id=ALTR_ABDI, game=cs2
+2025-05-18 20:29:47,854 INFO GET https://open.faceit.com/data/v4/players/ALTR_ABDI/stats/cs2 params={}
+2025-05-18 20:29:48,162 ERROR [FaceitClient] HTTPError: 404 Client Error: Not Found for url: https://open.faceit.com/data/v4/players/ALTR_ABDI/stats/cs2 | Response: {"errors":[{"message":"The resource was not found.","code":"err_nf0","http_status":404,"parameters":[]}]}
+2025-05-18 20:29:48,162 ERROR [prematch] Error: FACEIT 404: {"errors":[{"message":"The resource was not found.","code":"err_nf0","http_status":404,"parameters":[]}]}
+Traceback (most recent call last):
+  File "/app/app/faceit.py", line 77, in _get
+    resp.raise_for_status() # Will raise an HTTPError for 4xx/5xx if not handled by retries
+    ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/requests/models.py", line 1024, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 404 Client Error: Not Found for url: https://open.faceit.com/data/v4/players/ALTR_ABDI/stats/cs2
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/app/app/main.py", line 32, in prematch
+    data = list(pool.map(fc.get_player_stats, player_ids)) # Changed to get_player_stats
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/concurrent/futures/_base.py", line 619, in result_iterator
+    yield _result_or_cancel(fs.pop())
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/concurrent/futures/_base.py", line 317, in _result_or_cancel
+    return fut.result(timeout)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/concurrent/futures/_base.py", line 456, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/usr/local/lib/python3.12/concurrent/futures/thread.py", line 59, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/app/faceit.py", line 123, in get_player_stats
+    return self._get(f"/players/{player_id}/stats/{game}")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/app/faceit.py", line 85, in _get
+    raise FaceitHTTPError(e.response) from e
+app.faceit.FaceitHTTPError: FACEIT 404: {"errors":[{"message":"The resource was not found.","code":"err_nf0","http_status":404,"parameters":[]}]}
+2025-05-18 20:29:48,164 INFO 172.23.0.1 - - [18/May/2025 20:29:48] "[35m[1mGET /api/prematch-info?player=ALTR_ABDI HTTP/1.1[0m" 502 -
+2025-05-18 20:31:39,191 INFO  * Detected change in '/app/app/main.py', reloading
+2025-05-18 20:31:39,220 INFO  * Restarting with stat
+2025-05-18 20:31:39,407 INFO Flask app created successfully.
+2025-05-18 20:31:39,417 WARNING  * Debugger is active!
+2025-05-18 20:31:39,418 INFO  * Debugger PIN: 121-553-712
+2025-05-18 20:31:51,439 INFO  * Detected change in '/app/app/main.py', reloading
+2025-05-18 20:31:51,474 INFO  * Restarting with stat
+2025-05-18 20:31:51,651 INFO Flask app created successfully.
+2025-05-18 20:31:51,660 WARNING  * Debugger is active!
+2025-05-18 20:31:51,661 INFO  * Debugger PIN: 121-553-712
+2025-05-18 20:32:14,692 INFO  * Detected change in '/app/app/main.py', reloading
+2025-05-18 20:32:14,721 INFO  * Restarting with stat
+2025-05-18 20:32:14,862 INFO Flask app created successfully.
+2025-05-18 20:32:14,869 WARNING  * Debugger is active!
+2025-05-18 20:32:14,870 INFO  * Debugger PIN: 121-553-712
+2025-05-18 20:33:01,986 INFO Flask app created successfully.
+2025-05-18 20:33:02,017 INFO [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.23.0.3:5000
+2025-05-18 20:33:02,017 INFO [33mPress CTRL+C to quit[0m
+2025-05-18 20:33:02,017 INFO  * Restarting with stat
+2025-05-18 20:33:02,153 INFO Flask app created successfully.
+2025-05-18 20:33:02,160 WARNING  * Debugger is active!
+2025-05-18 20:33:02,161 INFO  * Debugger PIN: 121-553-712
+2025-05-18 20:33:14,898 INFO [/api/health] Health check accessed
+2025-05-18 20:33:14,899 INFO 172.23.0.1 - - [18/May/2025 20:33:14] "GET /api/health HTTP/1.1" 200 -
+2025-05-18 20:33:22,934 INFO 172.23.0.1 - - [18/May/2025 20:33:22] "OPTIONS /api/prematch-info?player=ALTR_ABDI HTTP/1.1" 200 -
+2025-05-18 20:33:22,938 INFO [prematch] Called with player_nicknames=['ALTR_ABDI']
+2025-05-18 20:33:22,938 INFO [FaceitClient] Using API key: set
+2025-05-18 20:33:22,939 INFO [FaceitClient] Session initialized with headers: {'User-Agent': 'python-requests/2.32.3', 'Accept-Encoding': 'gzip, deflate', 'Accept': '*/*', 'Connection': 'keep-alive', 'Authorization': 'Bearer e8f816bc-89ba-4346-b5df-277f6f529535'} and retry adapter
+2025-05-18 20:33:22,939 INFO [get_player_data_for_nickname] Fetching data for nickname: ALTR_ABDI
+2025-05-18 20:33:22,939 INFO get_player called with nickname=ALTR_ABDI, player_id=None
+2025-05-18 20:33:22,939 INFO GET https://open.faceit.com/data/v4/players params={'nickname': 'ALTR_ABDI'}
+2025-05-18 20:33:23,205 INFO [get_player_data_for_nickname] Resolved ALTR_ABDI to player_id: 9380126a-4360-49b1-b299-aa847c0a28a2. Fetching stats.
+2025-05-18 20:33:23,205 INFO get_player_stats called with player_id=9380126a-4360-49b1-b299-aa847c0a28a2, game=cs2
+2025-05-18 20:33:23,205 INFO GET https://open.faceit.com/data/v4/players/9380126a-4360-49b1-b299-aa847c0a28a2/stats/cs2 params={}
+2025-05-18 20:33:23,414 INFO [get_player_data_for_nickname] Successfully fetched data for ALTR_ABDI
+2025-05-18 20:33:23,414 INFO [prematch] Successfully processed 1 players.
+2025-05-18 20:33:23,415 INFO 172.23.0.1 - - [18/May/2025 20:33:23] "GET /api/prematch-info?player=ALTR_ABDI HTTP/1.1" 200 -
+2025-05-18 20:33:35,373 INFO 172.23.0.1 - - [18/May/2025 20:33:35] "OPTIONS /api/prematch-info?player=ALTR_ABDI HTTP/1.1" 200 -
+2025-05-18 20:33:35,376 INFO [prematch] Called with player_nicknames=['ALTR_ABDI']
+2025-05-18 20:33:35,376 INFO [FaceitClient] Using API key: set
+2025-05-18 20:33:35,376 INFO [FaceitClient] Session initialized with headers: {'User-Agent': 'python-requests/2.32.3', 'Accept-Encoding': 'gzip, deflate', 'Accept': '*/*', 'Connection': 'keep-alive', 'Authorization': 'Bearer e8f816bc-89ba-4346-b5df-277f6f529535'} and retry adapter
+2025-05-18 20:33:35,376 INFO [get_player_data_for_nickname] Fetching data for nickname: ALTR_ABDI
+2025-05-18 20:33:35,376 INFO get_player called with nickname=ALTR_ABDI, player_id=None
+2025-05-18 20:33:35,376 INFO GET https://open.faceit.com/data/v4/players params={'nickname': 'ALTR_ABDI'}
+2025-05-18 20:33:35,597 INFO [get_player_data_for_nickname] Resolved ALTR_ABDI to player_id: 9380126a-4360-49b1-b299-aa847c0a28a2. Fetching stats.
+2025-05-18 20:33:35,597 INFO get_player_stats called with player_id=9380126a-4360-49b1-b299-aa847c0a28a2, game=cs2
+2025-05-18 20:33:35,597 INFO GET https://open.faceit.com/data/v4/players/9380126a-4360-49b1-b299-aa847c0a28a2/stats/cs2 params={}
+2025-05-18 20:33:35,782 INFO [get_player_data_for_nickname] Successfully fetched data for ALTR_ABDI
+2025-05-18 20:33:35,782 INFO [prematch] Successfully processed 1 players.
+2025-05-18 20:33:35,783 INFO 172.23.0.1 - - [18/May/2025 20:33:35] "GET /api/prematch-info?player=ALTR_ABDI HTTP/1.1" 200 -
+2025-05-18 20:34:22,131 INFO 172.23.0.1 - - [18/May/2025 20:34:22] "OPTIONS /api/prematch-info?player=ALTR_ABDI HTTP/1.1" 200 -
+2025-05-18 20:34:22,135 INFO [prematch] Called with player_nicknames=['ALTR_ABDI']
+2025-05-18 20:34:22,135 INFO [FaceitClient] Using API key: set
+2025-05-18 20:34:22,135 INFO [FaceitClient] Session initialized with headers: {'User-Agent': 'python-requests/2.32.3', 'Accept-Encoding': 'gzip, deflate', 'Accept': '*/*', 'Connection': 'keep-alive', 'Authorization': 'Bearer e8f816bc-89ba-4346-b5df-277f6f529535'} and retry adapter
+2025-05-18 20:34:22,135 INFO [get_player_data_for_nickname] Fetching data for nickname: ALTR_ABDI
+2025-05-18 20:34:22,135 INFO get_player called with nickname=ALTR_ABDI, player_id=None
+2025-05-18 20:34:22,135 INFO GET https://open.faceit.com/data/v4/players params={'nickname': 'ALTR_ABDI'}
+2025-05-18 20:34:22,371 INFO [get_player_data_for_nickname] Resolved ALTR_ABDI to player_id: 9380126a-4360-49b1-b299-aa847c0a28a2. Fetching stats.
+2025-05-18 20:34:22,371 INFO get_player_stats called with player_id=9380126a-4360-49b1-b299-aa847c0a28a2, game=cs2
+2025-05-18 20:34:22,371 INFO GET https://open.faceit.com/data/v4/players/9380126a-4360-49b1-b299-aa847c0a28a2/stats/cs2 params={}
+2025-05-18 20:34:22,684 INFO [get_player_data_for_nickname] Successfully fetched data for ALTR_ABDI
+2025-05-18 20:34:22,684 INFO [prematch] Successfully processed 1 players.
+2025-05-18 20:34:22,685 INFO 172.23.0.1 - - [18/May/2025 20:34:22] "GET /api/prematch-info?player=ALTR_ABDI HTTP/1.1" 200 -
+2025-05-18 20:40:27,598 INFO  * Detected change in '/app/app/faceit.py', reloading
+2025-05-18 20:40:27,621 INFO  * Restarting with stat
+2025-05-18 20:40:44,811 INFO  * Restarting with stat
+2025-05-18 20:40:59,022 INFO  * Restarting with stat
+2025-05-18 20:41:05,213 INFO  * Restarting with stat
+2025-05-18 20:42:21,477 INFO  * Restarting with stat
+2025-05-18 20:42:34,687 INFO  * Restarting with stat
+2025-05-18 20:42:58,908 INFO  * Restarting with stat
+2025-05-18 20:43:53,201 INFO  * Restarting with stat
+2025-05-18 20:43:55,345 INFO  * Restarting with stat
+2025-05-18 20:44:15,551 INFO  * Restarting with stat
+2025-05-18 20:44:18,749 INFO  * Restarting with stat
+2025-05-18 20:44:20,935 INFO  * Restarting with stat
+2025-05-18 20:46:17,255 INFO  * Restarting with stat
+2025-05-18 20:47:23,486 INFO  * Restarting with stat
+2025-05-18 20:47:45,694 INFO  * Restarting with stat
+2025-05-18 20:47:51,881 INFO  * Restarting with stat
+2025-05-18 20:48:26,085 INFO  * Restarting with stat
+2025-05-18 20:48:28,264 INFO  * Restarting with stat
+2025-05-18 20:48:53,519 INFO  * Restarting with stat
+2025-05-18 20:49:02,715 INFO  * Restarting with stat
+2025-05-18 20:51:36,059 INFO  * Restarting with stat
+2025-05-18 20:51:59,280 INFO  * Restarting with stat
+2025-05-18 20:52:00,478 INFO  * Restarting with stat
+2025-05-18 20:52:01,673 INFO  * Restarting with stat

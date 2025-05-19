@@ -8,3 +8,4 @@ backend/venv/
 *.log
 prematch-info.json
 repo-structure.txt
+backend/faceit_client.log
