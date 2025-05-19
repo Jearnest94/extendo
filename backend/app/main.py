@@ -11,11 +11,20 @@ from concurrent.futures import ThreadPoolExecutor
 # Configure logging
 # Ensure this doesn't conflict with other logging configurations if they exist elsewhere.
 # If faceit.py also configures root logger, consider a more centralized logging setup.
-logging.basicConfig(
-    filename=os.getenv("BACKEND_LOGFILE", "backend_app.log"),
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s",
-)
+try:
+    logging.basicConfig(
+        filename=os.getenv("BACKEND_LOGFILE", "./backend_app.log"), # Changed to current directory
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s",
+    )
+except PermissionError:
+    # Fall back to console logging if file logging fails
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s",
+    )
+    logging.warning("Could not write to log file, falling back to console logging")
+
 logger = logging.getLogger(__name__)
 
 # Helper function to fetch details and stats for a single player nickname

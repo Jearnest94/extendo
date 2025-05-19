@@ -1,36 +1,235 @@
 /* extension-chrome/style.css */
 :root {
-  font-family: 'Inter', 'Roboto', 'Arial', sans-serif;
-  font-size: 15px;
-  line-height: 1.45;
+  --extendo-primary: #ff5500;
+  --extendo-secondary: #2c3e50;
+  --extendo-bg-dark: #222;
+  --extendo-bg-light: #333;
+  --extendo-text: #fff;
+  --extendo-text-muted: #ccc;
+  --extendo-accent: #4a9df8;
+  --extendo-win: #4caf50;
+  --extendo-loss: #f44336;
 }
-body, #root, .extendo-root {
+
+/* Remove the general styling that's affecting the whole page */
+/* body, #root, .extendo-root {
   max-width: 600px;
   margin: 0 auto;
   padding: 18px 16px;
   box-sizing: border-box;
-}
+} */
 
-/* Banner tweaks for injected UI */
+/* Banner tweaks for injected UI - scope all styles to our extension elements */
 .extendo-faceit-banner {
   position: fixed;
   bottom: 0;
   right: 0;
-  width: 33%;
-  max-height: 50vh;
+  width: 350px;
+  max-height: 85vh;
   overflow-y: auto;
-  background: #222;
-  color: #fff;
+  background: var(--extendo-bg-dark);
+  color: var(--extendo-text);
   z-index: 9999;
-  text-align: center;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  font-size: 1em;
+  font-size: 15px;
   line-height: 1.45;
-  font-family: inherit;
+  font-family: 'Inter', 'Roboto', 'Arial', sans-serif;
+  box-shadow: 0 2px 15px rgba(0,0,0,0.4);
+  border-radius: 8px 0 0 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Scope all child elements to ensure they don't affect the rest of the page */
+.extendo-faceit-banner * {
+  box-sizing: border-box;
+}
+
+.extendo-header {
+  background: var(--extendo-primary);
+  padding: 10px 15px;
+  text-align: center;
+}
+
+.extendo-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.extendo-player-card {
+  padding: 0;
+}
+
+.extendo-player-header {
+  display: flex;
+  align-items: center;
+  padding: 15px;
+  background: var(--extendo-bg-light);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.extendo-avatar {
+  height: 50px;
+  width: 50px;
+  border-radius: 50%;
+  margin-right: 15px;
+  object-fit: cover;
+  border: 2px solid var(--extendo-primary);
+}
+
+.extendo-player-info {
+  flex: 1;
+}
+
+.extendo-player-info h3 {
+  margin: 0 0 5px 0;
+  font-size: 1.1rem;
+}
+
+.extendo-player-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 0.9rem;
+  color: var(--extendo-text-muted);
+}
+
+.extendo-level {
+  font-weight: bold;
+  color: var(--extendo-accent);
+}
+
+.extendo-stats-section {
+  padding: 10px 15px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.extendo-stats-section h4 {
+  margin: 0 0 10px 0;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--extendo-text-muted);
+}
+
+.extendo-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.extendo-stat-box {
+  background: rgba(255,255,255,0.05);
+  border-radius: 4px;
+  padding: 8px 10px;
+  text-align: center;
+}
+
+.extendo-stat-box .stat-value {
+  display: block;
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: var(--extendo-text);
+}
+
+.extendo-stat-box .stat-label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--extendo-text-muted);
+  margin-top: 2px;
+}
+
+.extendo-maps-table {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 10px;
+}
+
+.extendo-maps-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.extendo-maps-table th,
+.extendo-maps-table td {
+  text-align: left;
+  padding: 6px 8px;
+}
+
+.extendo-maps-table th {
+  background: rgba(255,255,255,0.1);
+  font-weight: 500;
+  color: var(--extendo-text-muted);
+  position: sticky;
+  top: 0;
+}
+
+.extendo-maps-table tr:nth-child(even) {
+  background: rgba(255,255,255,0.03);
+}
+
+/* New styles for recent performance */
+.extendo-recent-results {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.extendo-result-streak {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 5px;
+}
+
+.result-dot {
+  display: block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.result-win {
+  background-color: var(--extendo-win);
+}
+
+.result-loss {
+  background-color: var(--extendo-loss);
+}
+
+.extendo-footer {
+  padding: 12px 15px;
+  text-align: center;
+}
+
+.extendo-profile-link {
+  color: var(--extendo-accent);
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: color 0.2s;
+}
+
+.extendo-profile-link:hover {
+  color: var(--extendo-primary);
+  text-decoration: underline;
 }
 
 .extendo-faceit-banner.extendo-faceit-banner-error {
   background: #a00;
   color: #fff;
-  text-align: left;
+  padding: 15px;
+  width: 300px;
+}
+
+.extendo-error h3 {
+  margin-top: 0;
+}
+
+.extendo-error pre {
+  white-space: pre-wrap;
+  font-size: 0.85rem;
+  background: rgba(0,0,0,0.2);
+  padding: 10px;
+  border-radius: 4px;
+  overflow-x: auto;
 }

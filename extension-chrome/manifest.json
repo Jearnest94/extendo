@@ -12,5 +12,11 @@
       "matches": ["<all_urls>"],
       "js": ["src/content.js"]
     }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["style.css"],
+      "matches": ["<all_urls>"]
+    }
   ]
 }
