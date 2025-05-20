@@ -46,69 +46,108 @@ injectExtendoStylesheet();
 
 console.log("Extension content script loaded.");
 
+// Function to extract match ID from URL
+function getMatchIdFromUrl() {
+  const matchRoomPattern = /\/en\/(cs2|csgo)\/room\/([a-f0-9-]+)/i; // cs2 or csgo
+  const match = window.location.pathname.match(matchRoomPattern);
+  if (match && match[2]) {
+    console.log("Extendo: Match ID found in URL:", match[2]);
+    return match[2];
+  }
+  console.log("Extendo: No Match ID found in URL.");
+  return null;
+}
+
 // Function to extract player nicknames from the current page
 function getPlayerNicknamesFromPage() {
-  const playerElements = document.querySelectorAll('a[href*="/en/players/"]');
-  const nicknames = [];
+  let nicknames = [];
   const genericLinkTexts = [
     'overview', 'stats', 'matches', 'friends', 'highlights', 'posts', 
     'settings', 'support', 'feedback', 'logout', 'login', 'register', 
     'home', 'tournaments', 'organizers', 'hubs', 'shop', 'premium', 
     'subscription', 'players', 'summary', 'graphs', 'demos', 'edit',
-    'videos', 'inventory', 'followers', 'following' // Added from new logs
+    'videos', 'inventory', 'followers', 'following'
     // Add any other generic texts you notice being picked up
   ];
 
-  playerElements.forEach(el => {
-    let potentialNickname = '';
-    // Attempt to get a more specific nickname element if nested
-    const specificNicknameElement = el.querySelector('span[class*="nickname"], div[class*="nickname"], strong[class*="nickname"], h1, h2, h3, h4, h5, h6');
-    
-    if (specificNicknameElement && specificNicknameElement.textContent) {
-      potentialNickname = specificNicknameElement.textContent.trim();
-    } else {
-      potentialNickname = el.textContent.trim();
-    }
+  // Strategy: General player link selector (a[href*="/en/players/"])
+  console.log("Extendo: Attempting to find player links on page using a[href*='/en/players/'].");
+  const playerElements = document.querySelectorAll('a[href*="/en/players/"]');
+  
+  if (playerElements.length > 0) {
+      console.log(`Extendo: Found ${playerElements.length} potential player <a> elements.`);
+      playerElements.forEach(el => {
+          let potentialNickname = '';
+          // Attempt to get a more specific nickname element if nested
+          const specificNicknameElement = el.querySelector('span[class*="nickname"], div[class*="nickname"], strong[class*="nickname"], h1, h2, h3, h4, h5, h6');
+          
+          let source = ''; // For logging
 
-    // Normalize potentialNickname by removing trailing digits and converting to lowercase for generic check
-    const normalizedPotentialNickname = potentialNickname.toLowerCase().replace(/\d+[+]*$/, '').replace(/[\s\d]+$/, '').trim(); // e.g. "Friends99" -> "friends", "Videos100+" -> "videos"
-
-    // If the text content seems generic (after normalization), try to extract from href
-    if (genericLinkTexts.includes(normalizedPotentialNickname)) {
-      try {
-        const url = new URL(el.href, location.origin); // Ensure base URL if href is relative
-        const pathParts = url.pathname.split('/'); // e.g., ["", "en", "players", "NICKNAME", "stats"]
-        const playersIndex = pathParts.indexOf('players');
-        if (playersIndex !== -1 && pathParts.length > playersIndex + 1 && pathParts[playersIndex + 1]) {
-          const nicknameFromHref = pathParts[playersIndex + 1];
-          // Further check: ensure it's not another generic part or a UUID
-          // Normalize nicknameFromHref as well before checking against genericLinkTexts
-          const normalizedNicknameFromHref = nicknameFromHref.toLowerCase().replace(/\d+[+]*$/, '').replace(/[\s\d]+$/, '').trim();
-          if (!genericLinkTexts.includes(normalizedNicknameFromHref) && isNaN(nicknameFromHref) && nicknameFromHref.length > 2 && nicknameFromHref.length < 24 && !nicknameFromHref.includes(':')) {
-            potentialNickname = nicknameFromHref;
+          if (specificNicknameElement && specificNicknameElement.textContent) {
+              potentialNickname = specificNicknameElement.textContent.trim();
+              source = 'specific child';
           } else {
-            potentialNickname = ''; // Reset if href part is also generic or unsuitable
+              potentialNickname = el.textContent.trim();
+              source = 'a.textContent';
           }
-        } else {
-          potentialNickname = ''; // Reset if href doesn't match expected pattern
-        }
-      } catch (e) {
-        console.warn("Extendo: Could not parse href for nickname", el.href, e);
-        potentialNickname = ''; // Reset on error
-      }
-    }
-    
-    // Filter and add the nickname
-    // Final check for generic terms on the potentialNickname itself, in case it wasn't caught above or came directly from textContent
-    const finalNormalizedNickname = potentialNickname.toLowerCase().replace(/\d+[+]*$/, '').replace(/[\s\d]+$/, '').trim();
-    if (potentialNickname && !genericLinkTexts.includes(finalNormalizedNickname) && potentialNickname.toLowerCase() !== 'players' && potentialNickname.length > 2 && potentialNickname.length < 24 && !potentialNickname.includes(':')) {
-      if (!nicknames.includes(potentialNickname)) {
-        nicknames.push(potentialNickname);
-      }
-    }
-  });
-  console.log("Extendo: Found nicknames on page:", nicknames);
-  return nicknames;
+
+          let normalizedPotentialNickname = potentialNickname.toLowerCase().replace(/\\d+[+]*$/, '').replace(/[\\s\\d]+$/, '').trim();
+
+          // If the text content seems generic or unsuitable length, try to extract from href
+          if (potentialNickname.length < 3 || potentialNickname.length > 12 || genericLinkTexts.includes(normalizedPotentialNickname)) {
+              source += ' -> href';
+              try {
+                  const url = new URL(el.href, location.origin); // Ensure base URL if href is relative
+                  const pathParts = url.pathname.split('/'); // e.g., ["", "en", "players", "NICKNAME", "stats"]
+                  const playersIndex = pathParts.indexOf('players');
+                  if (playersIndex !== -1 && pathParts.length > playersIndex + 1 && pathParts[playersIndex + 1]) {
+                      const nicknameFromHref = pathParts[playersIndex + 1];
+                      // Further check: ensure it's not another generic part or a UUID
+                      const normalizedNicknameFromHref = nicknameFromHref.toLowerCase().replace(/\\d+[+]*$/, '').replace(/[\\s\\d]+$/, '').trim();
+                      if (
+                          nicknameFromHref.length >= 3 && nicknameFromHref.length <= 12 && // Consistent length check
+                          !genericLinkTexts.includes(normalizedNicknameFromHref) && 
+                          isNaN(nicknameFromHref) && 
+                          !nicknameFromHref.includes(':')
+                      ) {
+                          potentialNickname = nicknameFromHref;
+                      } else {
+                          potentialNickname = ''; // Reset if href part is also generic or unsuitable
+                      }
+                  } else {
+                      potentialNickname = ''; // Reset if href doesn't match expected pattern
+                  }
+              } catch (e) {
+                  console.warn("Extendo: Could not parse href for nickname", el.href, e);
+                  potentialNickname = ''; // Reset on error
+              }
+          }
+          
+          // Final check for the determined potentialNickname
+          if (potentialNickname) { // Check if not empty string
+              const finalNormalizedNickname = potentialNickname.toLowerCase().replace(/\\d+[+]*$/, '').replace(/[\\s\\d]+$/, '').trim();
+              if (
+                  potentialNickname.length >= 3 && potentialNickname.length <= 12 &&
+                  !genericLinkTexts.includes(finalNormalizedNickname) && 
+                  !potentialNickname.includes(':') &&
+                  !nicknames.includes(potentialNickname)
+              ) {
+                  nicknames.push(potentialNickname);
+              } else {
+                  if (potentialNickname && !nicknames.includes(potentialNickname)) {
+                      console.log(`Extendo: Filtered out potential nickname: '${potentialNickname}' (Source: ${source}, Normalized: '${finalNormalizedNickname}', Length: ${potentialNickname.length}, IsGeneric: ${genericLinkTexts.includes(finalNormalizedNickname)}, HasColon: ${potentialNickname.includes(':')})`);
+                  }
+              }
+          }
+      });
+      console.log("Extendo: Nicknames found:", nicknames);
+  } else {
+      console.log("Extendo: No player <a> elements found matching a[href*='/en/players/'].");
+  }
+
+  const uniqueNicknames = [...new Set(nicknames)]; 
+  console.log("Extendo: Final unique nicknames found on page:", uniqueNicknames);
+  return uniqueNicknames;
 }
 
 function getLoggedInUserNickname() {
@@ -146,30 +185,63 @@ function runExtendoLogic() {
       </div>
       <div class="extendo-loading">
         <div class="extendo-spinner"></div>
-        <p>Fetching player statistics...</p>
+        <p>Detecting page type...</p>
       </div>
     `;
     document.body.appendChild(loadingBanner);
 
-    let playersToQuery = getPlayerNicknamesFromPage();
-    let queryTypeMessage = "players on this page";
+    const matchId = getMatchIdFromUrl();
+    let apiPromise;
+    let queryTypeMessage = "";
 
-    if (!playersToQuery || playersToQuery.length === 0) {
-        const loggedInUser = getLoggedInUserNickname();
-        if (loggedInUser) {
-            playersToQuery = [loggedInUser];
-            queryTypeMessage = `logged-in user (${loggedInUser})`;
-            console.log("Extendo: No matchroom players found, attempting to fetch stats for logged-in user:", loggedInUser);
+    if (matchId) {
+        console.log(`Extendo: Match room detected (ID: ${matchId}). Fetching stats via match ID.`);
+        queryTypeMessage = `players in match room ${matchId}`;
+        loadingBanner.querySelector("p").textContent = `Fetching statistics for ${queryTypeMessage}...`;
+        apiPromise = fetch(`http://localhost:5000/api/match-room-stats/${matchId}`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        });
+    } else {
+        console.log("Extendo: Not a match room. Attempting to find players on page or use logged-in user.");
+        let playersToQuery = getPlayerNicknamesFromPage();
+        
+        if (!playersToQuery || playersToQuery.length === 0) {
+            const loggedInUser = getLoggedInUserNickname();
+            if (loggedInUser) {
+                playersToQuery = [loggedInUser];
+                queryTypeMessage = `logged-in user (${loggedInUser})`;
+                console.log("Extendo: No players found on page, attempting to fetch stats for logged-in user:", loggedInUser);
+            }
+        } else {
+            queryTypeMessage = "players on this page";
+        }
+
+        if (playersToQuery && playersToQuery.length > 0) {
+            loadingBanner.querySelector("p").textContent = `Fetching statistics for ${queryTypeMessage}...`;
+            apiPromise = fetch("http://localhost:5000/api/player-stats", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ players: playersToQuery })
+            });
+        } else {
+            console.log("Extendo: No players to query (match ID, page scrape, or logged-in user).");
+            loadingBanner.innerHTML = `
+              <div class="extendo-header">
+                <h2>Extendo Stats</h2>
+              </div>
+              <div class="extendo-loading">
+                <p>No players found to query.</p>
+                <p>Navigate to a Faceit match room, a page with player links, or ensure you are logged in.</p>
+              </div>
+            `;
+            isRunningLogic = false; // Release lock
+            return; // Exit early
         }
     }
 
-    if (playersToQuery && playersToQuery.length > 0) {
-        loadingBanner.querySelector("p").textContent = `Fetching statistics for ${queryTypeMessage}...`;
-        fetch("http://localhost:5000/api/player-stats", {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ players: playersToQuery })
-        })
+    if (apiPromise) {
+        apiPromise
         .then((r) => {
             if (!r.ok) throw new Error(`HTTP ${r.status} - ${r.statusText || 'Error'}`);
             return r.json();

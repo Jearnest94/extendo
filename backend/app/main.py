@@ -5,203 +5,268 @@ import os
 import logging
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from .faceit import FaceitClient, FaceitHTTPError # Added FaceitHTTPError
-from concurrent.futures import ThreadPoolExecutor
+from .faceit import FaceitClient, FaceitHTTPError
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from . import aggregators # For ADR calculation
 
 # Configure logging
 # Ensure this doesn't conflict with other logging configurations if they exist elsewhere.
 # If faceit.py also configures root logger, consider a more centralized logging setup.
 try:
+    # Try to create the log directory if it doesn't exist
+    log_dir = os.path.dirname(os.getenv("BACKEND_LOGFILE", "./backend_app.log"))
+    if log_dir and not os.path.exists(log_dir):
+        os.makedirs(log_dir, exist_ok=True)
+        
     logging.basicConfig(
-        filename=os.getenv("BACKEND_LOGFILE", "./backend_app.log"), # Changed to current directory
+        filename=os.getenv("BACKEND_LOGFILE", "./backend_app.log"),
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s",
     )
-except PermissionError:
+except (PermissionError, OSError) as e: # Catch OSError for directory creation issues
     # Fall back to console logging if file logging fails
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s",
     )
-    logging.warning("Could not write to log file, falling back to console logging")
+    logging.warning(f"Could not write to log file or create log directory, falling back to console logging: {e}")
 
 logger = logging.getLogger(__name__)
 
-# Helper function to fetch details and stats for a single player nickname
-def get_player_data_for_nickname(fc: FaceitClient, nickname: str) -> dict | None:
+# Updated helper function to fetch details and stats for a single player nickname, including ADR
+def get_player_data_for_nickname(fc: FaceitClient, nickname: str) -> dict:
     try:
-        logger.info(f"[get_player_data_for_nickname] Fetching data for nickname: {nickname}")
+        logger.info(f"Fetching player details for nickname: {nickname}")
         player_details = fc.get_player(nickname=nickname)
         if not player_details or "player_id" not in player_details:
-            logger.warning(f"[get_player_data_for_nickname] Could not resolve nickname to player_id: {nickname}")
-            return {"nickname": nickname, "error": "Player not found or no player_id."}
+            logger.warning(f"Player details not found or missing player_id for nickname {nickname}")
+            return {"nickname": nickname, "error": "Player not found", "details": "Could not retrieve player details."}
 
         player_id = player_details["player_id"]
-        logger.info(f"[get_player_data_for_nickname] Resolved {nickname} to player_id: {player_id}. Fetching stats.")
-        
-        player_stats_data = fc.get_player_stats(player_id=player_id)
+        logger.info(f"Fetching game stats for player_id: {player_id} (nickname: {nickname})")
+        player_game_stats = fc.get_player_stats(player_id=player_id, game="cs2")
 
-        combined_data = player_details.copy()
-        combined_data["stats"] = player_stats_data
-        logger.info(f"[get_player_data_for_nickname] Successfully fetched data for {nickname}")
-        return combined_data
+        calculated_adr = None
+        if player_game_stats and player_game_stats.get("segments"):
+            # Try to find an 'Overall' or 'Game' segment for 5v5, otherwise take the first 5v5 segment
+            overall_segment = next((s for s in player_game_stats["segments"] if s.get("mode") == "5v5" and ("Overall" in s.get("label", "") or "Game" in s.get("label", ""))), None)
+            if not overall_segment:
+                overall_segment = next((s for s in player_game_stats["segments"] if s.get("mode") == "5v5"), None)
+            
+            if overall_segment:
+                calculated_adr = aggregators.adr(overall_segment)
+                logger.info(f"Calculated ADR for {nickname} ({player_id}): {calculated_adr}")
+            else:
+                logger.info(f"No suitable segment for ADR calculation found for {nickname} ({player_id})")
+        else:
+            logger.info(f"No segments found in player_game_stats for ADR calculation for {nickname} ({player_id})")
+
+        return {
+            "nickname": player_details.get("nickname"),
+            "player_id": player_id,
+            "avatar": player_details.get("avatar"),
+            "country": player_details.get("country"),
+            "games": player_details.get("games"), # Contains Elo, skill level etc.
+            "faceit_elo": player_details.get("games", {}).get("cs2", {}).get("faceit_elo"),
+            "skill_level": player_details.get("games", {}).get("cs2", {}).get("skill_level"),
+            "stats": player_game_stats, # Contains lifetime stats and all segments
+            "adr": calculated_adr,
+        }
     except FaceitHTTPError as e:
-        logger.error(f"[get_player_data_for_nickname] FaceitHTTPError for {nickname}: {e}", exc_info=True)
-        return {"nickname": nickname, "error": str(e), "details": "Faceit API error during data retrieval."}
+        logger.error(f"Faceit API error for {nickname}: {e}")
+        return {"nickname": nickname, "error": "Faceit API Error", "details": str(e)}
     except Exception as e:
-        logger.error(f"[get_player_data_for_nickname] Generic error for {nickname}: {e}", exc_info=True)
-        return {"nickname": nickname, "error": str(e), "details": "Generic error during data retrieval."}
+        logger.exception(f"Unexpected error processing {nickname}: {e}")
+        return {"nickname": nickname, "error": "Internal Server Error", "details": str(e)}
 
-# Route implementations (moved from __init__.py and completed)
+# New helper function to fetch details and stats using player_id, including ADR
+def get_player_data_by_id(fc: FaceitClient, player_id: str, nickname: str) -> dict: # Nickname primarily for logging/error context
+    try:
+        logger.info(f"Fetching player details for player_id: {player_id} (reported nickname: {nickname})")
+        player_details = fc.get_player(player_id=player_id)
+        if not player_details:
+            logger.warning(f"Player details not found for player_id {player_id} (reported nickname: {nickname})")
+            return {"nickname": nickname, "player_id": player_id, "error": "Player details not found by ID"}
+
+        # Use nickname from fetched details as the source of truth if available
+        authoritative_nickname = player_details.get("nickname", nickname)
+        
+        logger.info(f"Fetching game stats for player_id: {player_id} (nickname: {authoritative_nickname})")
+        player_game_stats = fc.get_player_stats(player_id=player_id, game="cs2")
+
+        calculated_adr = None
+        if player_game_stats and player_game_stats.get("segments"):
+            overall_segment = next((s for s in player_game_stats["segments"] if s.get("mode") == "5v5" and ("Overall" in s.get("label", "") or "Game" in s.get("label", ""))), None)
+            if not overall_segment:
+                overall_segment = next((s for s in player_game_stats["segments"] if s.get("mode") == "5v5"), None)
+
+            if overall_segment:
+                calculated_adr = aggregators.adr(overall_segment)
+                logger.info(f"Calculated ADR for {authoritative_nickname} ({player_id}): {calculated_adr}")
+            else:
+                logger.info(f"No suitable segment for ADR calculation found for {authoritative_nickname} ({player_id})")
+        else:
+            logger.info(f"No segments found in player_game_stats for ADR calculation for {authoritative_nickname} ({player_id})")
+            
+        return {
+            "nickname": authoritative_nickname,
+            "player_id": player_id,
+            "avatar": player_details.get("avatar"),
+            "country": player_details.get("country"),
+            "games": player_details.get("games"),
+            "faceit_elo": player_details.get("games", {}).get("cs2", {}).get("faceit_elo"),
+            "skill_level": player_details.get("games", {}).get("cs2", {}).get("skill_level"),
+            "stats": player_game_stats,
+            "adr": calculated_adr,
+        }
+    except FaceitHTTPError as e:
+        logger.error(f"Faceit API error for player_id {player_id} (nickname: {nickname}): {e}")
+        return {"nickname": nickname, "player_id": player_id, "error": "Faceit API Error", "details": str(e)}
+    except Exception as e:
+        logger.exception(f"Unexpected error processing player_id {player_id} (nickname: {nickname}): {e}")
+        return {"nickname": nickname, "player_id": player_id, "error": "Internal Server Error", "details": str(e)}
+
+# Route implementations
 def player_stats():
     """
-    Endpoint for fetching player statistics.
-    
-    Accepts a JSON body with a list of player nicknames:
-    {
-        "players": ["nickname1", "nickname2", ...]
-    }
-    
-    Returns a list of player data, maintaining partial results if some players fail.
+    Endpoint for fetching player statistics by nicknames.
+    Accepts GET (legacy, space-separated nicknames) or POST (JSON body with 'players' list).
     """
+    logger.info(f"Request to /api/player-stats. Method: {request.method}. Headers: {dict(request.headers)}")
+    player_nicknames = []
     if request.method == 'GET':
-        player_nicknames = request.args.getlist("player")
-        logger.info(f"[player_stats] Called with GET. Headers: {dict(request.headers)}, player_nicknames={player_nicknames}")
-    else: # POST
-        data = request.get_json(silent=True) or {}
-        player_nicknames = data.get("players", [])
-        logger.info(f"[player_stats] Called with POST. Headers: {dict(request.headers)}, player_nicknames={player_nicknames}")
+        nicknames_str = request.args.get("nicknames", "")
+        if nicknames_str:
+            player_nicknames = [name.strip() for name in nicknames_str.split(" ") if name.strip()]
+        logger.info(f"GET request with nicknames: {player_nicknames}")
+    elif request.method == 'POST':
+        data = request.get_json()
+        if data and "players" in data and isinstance(data["players"], list):
+            player_nicknames = [str(name).strip() for name in data["players"] if str(name).strip()]
+            logger.info(f"POST request with players: {player_nicknames}")
+        else:
+            logger.warning("POST request to player-stats missing 'players' list or invalid format.")
+            return jsonify({"error": "Invalid request body. 'players' list is required."}), 400
     
     if not player_nicknames:
-        logger.warning("[player_stats] No player nicknames provided")
+        logger.warning("player-stats called with no player nicknames.")
         return jsonify({"error": "No player nicknames provided"}), 400
     
     fc = FaceitClient()
-    
     all_player_data = []
-    with ThreadPoolExecutor(max_workers=len(player_nicknames) or 1) as pool:
-        results = list(pool.map(lambda nickname: get_player_data_for_nickname(fc, nickname), player_nicknames))
     
-    for data_item in results: # renamed data to data_item to avoid conflict
-        if data_item: 
-            all_player_data.append(data_item)
+    with ThreadPoolExecutor(max_workers=min(len(player_nicknames), 10)) as pool: # Limit max_workers
+        future_to_nickname = {
+            pool.submit(get_player_data_for_nickname, fc, name): name for name in player_nicknames
+        }
+        for future in as_completed(future_to_nickname):
+            nickname = future_to_nickname[future]
+            try:
+                data = future.result()
+                if data:
+                    all_player_data.append(data)
+                else: # Should be handled by helper returning error dict, but as a safeguard
+                    all_player_data.append({"nickname": nickname, "error": "Unknown error retrieving data"})
+            except Exception as exc:
+                logger.exception(f"Future for {nickname} generated an exception: {exc}")
+                all_player_data.append({"nickname": nickname, "error": "Processing Error", "details": str(exc)})
 
-    if not all_player_data:
-        logger.warning(f"[player_stats] No data fetched for any nicknames: {player_nicknames}")
-        return jsonify({"error": "Failed to fetch data for any players"}), 500
+    if not all_player_data: # Should not happen if nicknames were provided, errors would be in list
+        logger.info("No data processed for any player in player_stats.")
+        # This case might indicate all lookups failed before returning structured errors
+        return jsonify({"error": "Failed to process any players"}), 500 
     
-    for player in all_player_data:
-        if player and "stats" in player and isinstance(player["stats"], dict) and "lifetime" in player["stats"]:
-            lifetime_stats = player["stats"].get("lifetime", {})
-            if isinstance(lifetime_stats, dict):
-                player["adr"] = (lifetime_stats.get("Average Damage per Round") or
-                               lifetime_stats.get("ADR") or
-                               lifetime_stats.get("adr") or "N/A")
-            else:
-                player["adr"] = "N/A" # Lifetime stats not a dict
-        elif player:
-             player["adr"] = "N/A" # No valid stats structure
-
-    logger.info(f"[player_stats] Successfully processed {len(all_player_data)} players.")
+    logger.info(f"[player_stats] Successfully processed {len(all_player_data)} players (including potential errors).")
     return jsonify(all_player_data)
 
 
-# Legacy route name, redirect to player_stats
 def prematch():
-    """Legacy endpoint, redirects to player_stats"""
-    logger.info(f"[prematch] Legacy endpoint called. Headers: {dict(request.headers)}, redirecting to player_stats")
+    """Legacy endpoint, redirects to player_stats (conceptually, actual call)."""
+    logger.info(f"[prematch] Legacy endpoint called. Headers: {dict(request.headers)}. Forwarding to player_stats logic.")
+    # This doesn't do a formal redirect, but reuses the logic.
+    # For a true redirect, you'd use Flask's redirect() but that changes the request type for POST.
+    # Given the client expects player_stats's response, directly calling is fine.
     return player_stats()
 
-
-def _extract_adr(stats_data: dict) -> list:
-    """Extracts Average Damage per Round (ADR) for players from match stats."""
-    players_adr = []
-    logger.info("[_extract_adr] Extracting ADR from stats_data")
+# New route for match room stats by match_id
+def match_room_stats(match_id: str):
+    logger.info(f"Request to /api/match-room-stats/{match_id}. Headers: {dict(request.headers)}")
+    fc = FaceitClient()
     
-    if "rounds" in stats_data and stats_data["rounds"]:
-        processed_players = set()
-        for round_info in stats_data["rounds"]:
-            if not isinstance(round_info, dict) or "teams" not in round_info:
-                logger.warning(f"[_extract_adr] Skipping round due to unexpected structure: {str(round_info)[:100]}...")
-                continue
+    try:
+        logger.info(f"Fetching match details for match_id: {match_id}")
+        match_details_data = fc.match_details(match_id)
+    except FaceitHTTPError as e:
+        logger.error(f"Faceit API error fetching match details for {match_id}: {e}")
+        return jsonify({"error": "Faceit API Error fetching match details", "details": str(e)}), e.resp.status_code if hasattr(e, 'resp') else 500
+    except Exception as e:
+        logger.exception(f"Unexpected error fetching match details for {match_id}: {e}")
+        return jsonify({"error": "Internal Server Error fetching match details", "details": str(e)}), 500
 
-            for team_key, team_content in round_info.get("teams", {}).items():
-                if not isinstance(team_content, dict) or "players" not in team_content:
-                    logger.warning(f"[_extract_adr] Skipping team due to unexpected structure: {team_key}, {str(team_content)[:100]}...")
-                    continue
+    if not match_details_data or "teams" not in match_details_data:
+        logger.warning(f"Match details for {match_id} are missing or don't contain 'teams' field.")
+        return jsonify({"error": "Match not found or invalid match data structure"}), 404
 
-                for player in team_content.get("players", []):
-                    if not isinstance(player, dict):
-                        logger.warning(f"[_extract_adr] Skipping player due to unexpected structure: {str(player)[:100]}...")
-                        continue
-                        
-                    player_id = player.get("player_id")
-                    if player_id and player_id not in processed_players:
-                        # ADR in match stats is often "Average ADR" or similar in player_stats object
-                        adr_value = (player.get("player_stats", {}).get("Average ADR") or
-                                     player.get("player_stats", {}).get("ADR"))
-                        if adr_value is not None:
-                            players_adr.append({
-                                "player_id": player_id, 
-                                "nickname": player.get("nickname"), 
-                                "adr": adr_value
-                            })
-                            processed_players.add(player_id)
-    if not players_adr:
-        logger.warning(f"[_extract_adr] Could not extract ADR from stats_data: {str(stats_data)[:200]}...")
-    else:
-        logger.info(f"[_extract_adr] Extracted ADR for {len(players_adr)} players: {players_adr}")
-    return players_adr
+    players_to_fetch = [] # List of (player_id, nickname)
+    for team_faction, team_data in match_details_data.get("teams", {}).items():
+        for player_info in team_data.get("roster", []):
+            if player_info.get("player_id") and player_info.get("nickname"):
+                players_to_fetch.append((player_info["player_id"], player_info["nickname"]))
+            else:
+                logger.warning(f"Skipping player in match {match_id} due to missing ID or nickname: {player_info}")
+    
+    if not players_to_fetch:
+        logger.warning(f"No players found in rosters for match {match_id}.")
+        return jsonify({"error": "No players found in the match rosters"}), 404
 
+    logger.info(f"Found {len(players_to_fetch)} players in match {match_id}. Fetching their stats...")
+    all_player_data = []
+    with ThreadPoolExecutor(max_workers=min(len(players_to_fetch), 10)) as pool: # Limit max_workers
+        future_to_player_info = {
+            pool.submit(get_player_data_by_id, fc, p_id, p_nick): (p_id, p_nick) 
+            for p_id, p_nick in players_to_fetch
+        }
+        for future in as_completed(future_to_player_info):
+            p_id, p_nick = future_to_player_info[future]
+            try:
+                data = future.result()
+                if data:
+                    all_player_data.append(data)
+                else:
+                    all_player_data.append({"nickname": p_nick, "player_id": p_id, "error": "Unknown error retrieving data"})
+            except Exception as exc:
+                logger.exception(f"Future for player {p_nick} ({p_id}) generated an exception: {exc}")
+                all_player_data.append({"nickname": p_nick, "player_id": p_id, "error": "Processing Error", "details": str(exc)})
+    
+    logger.info(f"[match_room_stats] Successfully processed {len(all_player_data)} players for match {match_id} (including potential errors).")
+    return jsonify(all_player_data)
+
+
+# _extract_adr removed as ADR is now calculated in helper functions.
 
 def _enrich_teams(details: dict, map_name: str) -> list:
-    """Enriches team details with the map name."""
+    """Enriches team details with the map name. (Potentially for a different feature)"""
     teams = []
     logger.info(f"[_enrich_teams] Enriching teams from details for map: {map_name}")
     for team_id, team_data in details.get("teams", {}).items():
-        enriched_team = team_data.copy()
-        enriched_team["team_id"] = team_id
-        enriched_team["map"] = map_name
-        teams.append(enriched_team)
+        team_info = {
+            "id": team_id,
+            "name": team_data.get("name", f"Team {team_id}"),
+            "avatar": team_data.get("avatar"),
+            "leader_id": team_data.get("leader"),
+            "map_name": map_name,
+            "players": [p.get("nickname") for p in team_data.get("roster", []) if p.get("nickname")]
+        }
+        teams.append(team_info)
     if not teams:
-        logger.warning(f"[_enrich_teams] No teams found in details to enrich: {str(details)[:200]}...")
+        logger.warning("[_enrich_teams] No teams found or enriched.")
     else:
         logger.info(f"[_enrich_teams] Enriched {len(teams)} teams.")
     return teams
 
-def match_room(match_id: str):
-    logger.info(f"[match_room] Called with match_id={match_id}")
-    try:
-        fc = FaceitClient()
-        details = fc.match_details(match_id) # Match details (roster, etc.)
-        stats = fc.match_stats(match_id)     # Match stats (performance per round/player)
-
-        map_name = "Unknown Map"
-        # Try to get map name from stats (often in round_stats of the first round)
-        if (stats.get("rounds") and len(stats["rounds"]) > 0 and 
-            isinstance(stats["rounds"][0], dict) and 
-            stats["rounds"][0].get("round_stats", {}).get("Map")):
-            map_name = stats["rounds"][0]["round_stats"]["Map"]
-        # Fallback to details if not in stats (less common for map name)
-        elif details.get("voting", {}).get("map", {}).get("pick", []):
-             map_name = details["voting"]["map"]["pick"][0] if details["voting"]["map"]["pick"] else map_name
-        else:
-            logger.warning(f"[match_room] Could not determine map name for match_id={match_id}")
-
-        teams_enriched = _enrich_teams(details, map_name)
-        players_adr_data = _extract_adr(stats) # ADR from match performance stats
-
-        response_data = {
-            "match_id": match_id,
-            "map_name": map_name,
-            "teams": teams_enriched,
-            "player_performance_stats": players_adr_data 
-        }
-        logger.info(f"[match_room] Successfully processed match_room for match_id={match_id}")
-        return jsonify(response_data)
-    except Exception as e:
-        logger.error(f"[match_room] Error for match_id={match_id}: {e}", exc_info=True)
-        return jsonify({"error": str(e)}), 502
+def health(): # Added health check for consistency
+    logger.info("Health check successful")
+    return jsonify({"status": "ok"})
 
 def create_app():
     app = Flask(__name__)
@@ -209,27 +274,18 @@ def create_app():
     
     CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
+    # Add routes
+    app.add_url_rule("/api/health", view_func=health, methods=["GET"])
     app.add_url_rule("/api/player-stats", view_func=player_stats, methods=["GET", "POST"])
-    app.add_url_rule("/api/prematch-info", view_func=prematch, methods=["GET"])
-    app.add_url_rule("/api/match-room/<match_id>", view_func=match_room, methods=["GET"])
+    app.add_url_rule("/api/prematch-info", view_func=prematch, methods=["GET", "POST"]) # Legacy, uses player_stats logic
+    app.add_url_rule("/api/match-room-stats/<match_id>", view_func=match_room_stats, methods=["GET"])
+    # The old match_room function is not registered as it's superseded by match_room_stats
+    # If _enrich_teams is part of another feature, its route would be here.
 
-    @app.route("/")
-    def index():
-        logger.info("[/] Index route accessed")
-        return jsonify({"message": "Welcome to the Extendo API!"})
-
-    @app.route("/api/health", methods=["GET"])
-    def health():
-        logger.info("[/api/health] Health check accessed")
-        return jsonify({"status": "ok"})
-
-    logger.info("Flask app created successfully.")
+    logger.info("Flask app created and routes registered.")
     return app
 
 # For running with `python -m app.main` directly (though gunicorn/flask run is preferred)
 if __name__ == "__main__":
     app = create_app()
-    port = int(os.environ.get("FLASK_RUN_PORT", 5000))
-    host = os.environ.get("FLASK_RUN_HOST", "0.0.0.0")
-    logger.info(f"Starting Flask app directly on {host}:{port}")
-    app.run(host=host, port=port)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
