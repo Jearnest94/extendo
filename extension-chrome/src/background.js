@@ -21,3 +21,5 @@ chrome.action.onClicked.addListener((tab) => {
   console.log("[Extendo] Reloading extension via toolbar icon click.");
   chrome.runtime.reload();
 });
+
+console.log("[Extendo] Background script loaded and listeners attached.");

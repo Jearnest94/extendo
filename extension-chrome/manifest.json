@@ -3,7 +3,7 @@
   "name": "Extendo",
   "version": "0.0.1",
   "description": "Extendo Chrome extension.",
-  "permissions": ["commands"],
+  "permissions": ["storage", "activeTab", "scripting"],
   "background": {
     "service_worker": "src/background.js"
   },
@@ -13,8 +13,8 @@
   "commands": {
     "reload_extension": {
       "suggested_key": {
-        "default": "Ctrl+Shift+R",
-        "mac": "Command+Shift+R"
+        "default": "Ctrl+Shift+X",
+        "mac": "Command+Shift+X"
       },
       "description": "Reload the Extendo extension"
     }

@@ -195,51 +195,81 @@ def match_room_stats(match_id: str):
     
     try:
         logger.info(f"Fetching match details for match_id: {match_id}")
-        match_details_data = fc.match_details(match_id)
+        match_details_data = fc.match_details(match_id=match_id)
+        logger.debug(f"Match details raw response: {match_details_data}")
     except FaceitHTTPError as e:
         logger.error(f"Faceit API error fetching match details for {match_id}: {e}")
-        return jsonify({"error": "Faceit API Error fetching match details", "details": str(e)}), e.resp.status_code if hasattr(e, 'resp') else 500
+        return jsonify({"error": "Faceit API Error fetching match details", "details": str(e), "match_id": match_id}), 500
     except Exception as e:
         logger.exception(f"Unexpected error fetching match details for {match_id}: {e}")
-        return jsonify({"error": "Internal Server Error fetching match details", "details": str(e)}), 500
+        return jsonify({"error": "Internal Server Error fetching match details", "details": str(e), "match_id": match_id}), 500
 
     if not match_details_data or "teams" not in match_details_data:
-        logger.warning(f"Match details for {match_id} are missing or don't contain 'teams' field.")
-        return jsonify({"error": "Match not found or invalid match data structure"}), 404
+        logger.warning(f"No 'teams' field in match details for match_id: {match_id}. Response: {match_details_data}")
+        return jsonify({"error": "Match details incomplete or missing 'teams' field", "match_id": match_id}), 404
 
     players_to_fetch = [] # List of (player_id, nickname)
+    # Ensure consistent order of factions if possible (e.g., faction1 then faction2)
+    # Python 3.7+ dicts preserve insertion order. Faceit API usually sends faction1 then faction2.
+    # If strict ordering is needed and API/dict order isn't guaranteed, sort team_faction keys:
+    # team_factions_sorted = sorted(match_details_data.get("teams", {}).keys())
+    # for team_faction in team_factions_sorted:
+    #    team_data = match_details_data["teams"][team_faction]
+    #    ...
+    # For now, assume Faceit API + modern Python dicts give a consistent order (e.g. faction1, then faction2)
+    
     for team_faction, team_data in match_details_data.get("teams", {}).items():
-        for player_info in team_data.get("roster", []):
-            if player_info.get("player_id") and player_info.get("nickname"):
-                players_to_fetch.append((player_info["player_id"], player_info["nickname"]))
+        logger.debug(f"Processing team: {team_faction}, Data: {team_data.get('roster', [])}")
+        for player in team_data.get("roster", []):
+            if "player_id" in player and "nickname" in player:
+                players_to_fetch.append((player["player_id"], player["nickname"]))
             else:
-                logger.warning(f"Skipping player in match {match_id} due to missing ID or nickname: {player_info}")
+                logger.warning(f"Player in roster missing player_id or nickname: {player}")
     
     if not players_to_fetch:
-        logger.warning(f"No players found in rosters for match {match_id}.")
-        return jsonify({"error": "No players found in the match rosters"}), 404
+        logger.warning(f"No players found in match details for match_id: {match_id}")
+        return jsonify({"error": "No players found in match details", "match_id": match_id}), 404
 
     logger.info(f"Found {len(players_to_fetch)} players in match {match_id}. Fetching their stats...")
-    all_player_data = []
-    with ThreadPoolExecutor(max_workers=min(len(players_to_fetch), 10)) as pool: # Limit max_workers
+    all_player_data_unordered = [] # Results will be in completion order
+    with ThreadPoolExecutor(max_workers=min(len(players_to_fetch), 10)) as pool:
         future_to_player_info = {
-            pool.submit(get_player_data_by_id, fc, p_id, p_nick): (p_id, p_nick) 
-            for p_id, p_nick in players_to_fetch
+            pool.submit(get_player_data_by_id, fc, player_id, nickname): (player_id, nickname)
+            for player_id, nickname in players_to_fetch
         }
         for future in as_completed(future_to_player_info):
-            p_id, p_nick = future_to_player_info[future]
+            player_id, nickname = future_to_player_info[future]
             try:
                 data = future.result()
-                if data:
-                    all_player_data.append(data)
-                else:
-                    all_player_data.append({"nickname": p_nick, "player_id": p_id, "error": "Unknown error retrieving data"})
+                all_player_data_unordered.append(data)
             except Exception as exc:
-                logger.exception(f"Future for player {p_nick} ({p_id}) generated an exception: {exc}")
-                all_player_data.append({"nickname": p_nick, "player_id": p_id, "error": "Processing Error", "details": str(exc)})
+                logger.error(f"Error fetching data for player_id {player_id} ({nickname}): {exc}")
+                all_player_data_unordered.append({"nickname": nickname, "player_id": player_id, "error": "Failed to fetch data", "details": str(exc)})
     
-    logger.info(f"[match_room_stats] Successfully processed {len(all_player_data)} players for match {match_id} (including potential errors).")
-    return jsonify(all_player_data)
+    # Reorder the fetched data to match the original players_to_fetch order
+    player_data_map = {data["player_id"]: data for data in all_player_data_unordered if data and "player_id" in data}
+    
+    ordered_player_data = []
+    for player_id, original_nickname in players_to_fetch:
+        if player_id in player_data_map:
+            ordered_player_data.append(player_data_map[player_id])
+        else:
+            # Attempt to find by nickname if ID map failed (e.g. error object might not have player_id at top level)
+            error_obj_for_player = next((p_data for p_data in all_player_data_unordered 
+                                         if p_data.get("nickname") == original_nickname and p_data.get("player_id") == player_id and "error" in p_data), None)
+            if error_obj_for_player:
+                 ordered_player_data.append(error_obj_for_player)
+            else:
+                logger.warning(f"Data for player_id {player_id} ({original_nickname}) not found in fetched results map. Appending error placeholder.")
+                ordered_player_data.append({
+                    "nickname": original_nickname, 
+                    "player_id": player_id, 
+                    "error": "Data not retrieved or mapped post-processing",
+                    "details": "Original fetch might have failed or data structure was unexpected."
+                })
+
+    logger.info(f"[match_room_stats] Successfully processed and ordered {len(ordered_player_data)} players for match {match_id}.")
+    return jsonify(ordered_player_data)
 
 
 # _extract_adr removed as ADR is now calculated in helper functions.

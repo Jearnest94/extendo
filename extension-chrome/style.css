@@ -351,3 +351,28 @@
   font-size: 0.8em;
   opacity: 0.8;
 }
+
+/* Styles for the new two-row team display */
+.extendo-teams-container {
+  /* Container for the two team rows */
+  padding: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.extendo-team-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr); /* Each row is a 5-column grid */
+  gap: 10px; /* Gap between cards in a row */
+  margin-bottom: 15px; /* Space between the two team rows */
+}
+
+.extendo-team-row:last-child {
+  margin-bottom: 0;
+}
+
+/* Ensure player cards fit well within the new row structure */
+.extendo-team-row .extendo-player-card {
+  /* Any specific adjustments if needed, but existing card styles should mostly work */
+  width: 100%; /* Ensure cards take full width of their grid cell */
+}

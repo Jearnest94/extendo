@@ -251,14 +251,17 @@ async function getLoggedInUserNickname() {
 
 let lastUrl = location.href;
 let isRunningLogic = false; // Simple lock to prevent concurrent runs
+let observerEnabled = true;
 
-function runExtendoLogic() {
+// MODIFIED: runExtendoLogic to be async and use try/catch/finally
+async function runExtendoLogic() {
     if (isRunningLogic) {
         console.log("Extendo: Logic is already running, skipping.");
         return;
     }
     isRunningLogic = true;
-    console.log("Extendo: Running logic for URL:", location.href);
+    observerEnabled = false; // Disable observer during execution
+    console.log("Extendo: Running logic for URL:", location.href, "(Observer temporarily disabled)");
 
     removeExistingBanner(); // Remove any previous banner first
 
@@ -274,45 +277,36 @@ function runExtendoLogic() {
       </div>
     `;
     document.body.appendChild(loadingBanner);
-
     addCloseButton(loadingBanner);
 
-    const matchId = getMatchIdFromUrl();
-    let apiPromise;
-    let queryTypeMessage = "";
+    try {
+        const matchId = getMatchIdFromUrl();
+        let playersToQuery = [];
+        let queryTypeMessage = "";
+        let endpoint = "";
+        let options = {};
 
-    if (matchId) {
-        console.log(`Extendo: Match room detected (ID: ${matchId}). Fetching stats via match ID.`);
-        queryTypeMessage = `players in match room ${matchId}`;
-        loadingBanner.querySelector("p").textContent = `Fetching statistics for ${queryTypeMessage}...`;
-        apiPromise = fetch(`http://localhost:5000/api/match-room-stats/${matchId}`, {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' }
-        });
-    } else {
-        console.log("Extendo: Not a match room. Attempting to find players on page or use logged-in user.");
-        let playersToQuery = getPlayerNicknamesFromPage();
-        
-        if (!playersToQuery || playersToQuery.length === 0) {
-            loadingBanner.querySelector("p").textContent = "Looking for logged-in user...";
+        if (matchId) {
+            console.log(`Extendo: Match room detected (ID: ${matchId}). Fetching stats via match ID.`);
+            queryTypeMessage = `players in match room ${matchId}`;
+            loadingBanner.querySelector("p").textContent = `Fetching statistics for ${queryTypeMessage}...`;
+            endpoint = `http://localhost:5000/api/match-room-stats/${matchId}`;
+            options = {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            };
+        } else {
+            console.log("Extendo: Not a match room. Attempting to find players on page or use logged-in user.");
+            playersToQuery = getPlayerNicknamesFromPage();
             
-            // Since getLoggedInUserNickname is now async, we need to handle it differently
-            getLoggedInUserNickname().then(loggedInUser => {
+            if (!playersToQuery || playersToQuery.length === 0) {
+                loadingBanner.querySelector("p").textContent = "Looking for logged-in user...";
+                const loggedInUser = await getLoggedInUserNickname(); // Use await
+
                 if (loggedInUser) {
                     playersToQuery = [loggedInUser];
                     queryTypeMessage = `logged-in user (${loggedInUser})`;
                     console.log("Extendo: No players found on page, attempting to fetch stats for logged-in user:", loggedInUser);
-                    
-                    loadingBanner.querySelector("p").textContent = `Fetching statistics for ${queryTypeMessage}...`;
-                    return fetch("http://localhost:5000/api/player-stats", {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ players: playersToQuery })
-                    }).then(handleApiResponse)
-                    .catch(handleApiError)
-                    .finally(() => {
-                        isRunningLogic = false;
-                    });
                 } else {
                     console.log("Extendo: No logged-in user found either.");
                     loadingBanner.innerHTML = `
@@ -324,60 +318,67 @@ function runExtendoLogic() {
                         <p>Navigate to a Faceit match room, a page with player links, or ensure you are logged in.</p>
                       </div>
                     `;
-                    isRunningLogic = false;
+                    // addCloseButton is already on loadingBanner
+                    return; // Exit early
                 }
-            }).catch(error => {
-                console.error("Extendo: Error getting logged-in user:", error);
-                isRunningLogic = false;
-            });
-            
-            return; // Exit early as we're handling the async flow separately
-        } else {
-            queryTypeMessage = "players on this page";
+            } else {
+                queryTypeMessage = "players on this page";
+            }
+
+            if (playersToQuery && playersToQuery.length > 0) {
+                loadingBanner.querySelector("p").textContent = `Fetching statistics for ${queryTypeMessage}...`;
+                endpoint = "http://localhost:5000/api/player-stats";
+                options = {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ players: playersToQuery })
+                };
+            } else {
+                // This case implies no matchId, no players from page, and no loggedInUser (or error fetching it)
+                // The "No players found to query" message should already be set if loggedInUser was null.
+                // If playersToQuery was initially populated but then became empty, this is a fallback.
+                console.log("Extendo: No players to query (final check).");
+                if (!loadingBanner.innerHTML.includes("No players found to query.")) {
+                    loadingBanner.innerHTML = `
+                      <div class="extendo-header">
+                        <h2>Extendo Stats</h2>
+                      </div>
+                      <div class="extendo-loading">
+                        <p>No players found on this page or an issue occurred.</p>
+                      </div>
+                    `;
+                   // addCloseButton is already on loadingBanner
+                }
+                return; 
+            }
         }
 
-        if (playersToQuery && playersToQuery.length > 0) {
-            loadingBanner.querySelector("p").textContent = `Fetching statistics for ${queryTypeMessage}...`;
-            apiPromise = fetch("http://localhost:5000/api/player-stats", {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ players: playersToQuery })
-            });
+        if (endpoint) {
+            const response = await fetch(endpoint, options); // Use await
+            await handleApiResponse(response); // Use await
         } else {
-            console.log("Extendo: No players to query.");
-            loadingBanner.innerHTML = `
-              <div class="extendo-header">
-                <h2>Extendo Stats</h2>
-              </div>
-              <div class="extendo-loading">
-                <p>No players found on this page.</p>
-                <p>Navigate to a Faceit match room or ensure you are logged in for your stats.</p>
-              </div>
-            `;
-            isRunningLogic = false; // Release lock
-            return; // Exit early
+            // This case should be rare if logic above is correct (e.g. matchId was null, and playersToQuery was empty)
+            console.log("Extendo: No API endpoint determined, and did not return early.");
+             if (loadingBanner && loadingBanner.parentElement && loadingBanner.querySelector("p")?.textContent.includes("Detecting page type...")) {
+                loadingBanner.innerHTML = `
+                  <div class="extendo-header">
+                    <h2>Extendo Stats</h2>
+                  </div>
+                  <div class="extendo-loading">
+                    <p>Unable to determine action. No players or match ID found.</p>
+                  </div>
+                `;
+                // addCloseButton is already on loadingBanner
+            }
         }
-    }
 
-    if (apiPromise) {
-        apiPromise
-            .then(handleApiResponse)
-            .catch(handleApiError)
-            .finally(() => {
-                isRunningLogic = false;
-            });
-    } else {
-        console.log("Extendo: No players to query.");
-        loadingBanner.innerHTML = `
-          <div class="extendo-header">
-            <h2>Extendo Stats</h2>
-          </div>
-          <div class="extendo-loading">
-            <p>No players found on this page.</p>
-            <p>Navigate to a Faceit match room or ensure you are logged in for your stats.</p>
-          </div>
-        `;
-        isRunningLogic = false; // Release lock
+    } catch (error) {
+        // This will catch errors from getLoggedInUserNickname, fetch, response.json(), or handleApiResponse
+        await handleApiError(error); 
+    } finally {
+        isRunningLogic = false;
+        observerEnabled = true; // Re-enable observer
+        console.log("Extendo: Logic finished. (Observer re-enabled)");
     }
 }
 
@@ -399,17 +400,22 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         injectExtendoStylesheet();
         console.log("Extendo: DOMContentLoaded, content script loaded. Initializing...");
-        runExtendoLogic();
+        runExtendoLogic(); // runExtendoLogic is now async, but this call doesn't need to change
     });
 } else {
     injectExtendoStylesheet();
     console.log("Extendo: Content script loaded (DOM already ready). Initializing...");
-    runExtendoLogic();
+    runExtendoLogic(); // runExtendoLogic is now async, but this call doesn't need to change
 }
 
 const debouncedRunExtendoLogic = debounce(runExtendoLogic, 500);
 
-const observer = new MutationObserver((mutationsList, observer) => {
+const observer = new MutationObserver((mutationsList, obs) => {
+  if (!observerEnabled) { 
+    // console.log("Extendo: Observer logic skipped (disabled).");
+    return;
+  }
+
   // Basic check: if URL changed, re-run.
   if (location.href !== lastUrl) {
     console.log("Extendo: URL changed from", lastUrl, "to", location.href, ". Re-running logic (debounced).");
@@ -457,6 +463,9 @@ function addCloseButton(banner) {
   const header = banner.querySelector('.extendo-header');
   
   if (header) {
+    // Ensure no duplicate buttons
+    if (header.querySelector('.extendo-close-button')) return;
+
     // Create close button
     const closeButton = document.createElement('button');
     closeButton.className = 'extendo-close-button';
@@ -494,242 +503,303 @@ function addCloseButton(banner) {
 }
 
 // Helper functions for API response handling
-async function handleApiResponse(response) { // Made this function async
-  if (!response.ok) throw new Error(`HTTP ${response.status} - ${response.statusText || 'Error'}`);
-  
-  return response.json().then(async data => { // This inner function is now async
-    const loadingBanner = document.querySelector('.extendo-faceit-banner');
-    if (loadingBanner && loadingBanner.parentNode) loadingBanner.remove();
-    
-    const newBanner = document.createElement("div");
-    newBanner.className = "extendo-faceit-banner";
-    
-    let bannerHeaderHtml = '';
-    let bannerContentHtml = '';
-    let playerCardsHtmlString = ''; // Accumulates HTML for all player cards
-
-    const loggedInUserId = await getCurrentUserId(); // Get logged-in user's ID
-    console.log("Extendo: Logged-in user ID for team sorting:", loggedInUserId);
-
-    let playersToProcess = Array.isArray(data) ? [...data] : []; // Default to a copy of data or empty array
-
-    // Attempt to sort players for 5v5 match rooms
-    if (Array.isArray(data) && data.length === 10) { // Specifically for 5v5 match rooms
-        console.log("Extendo: Attempting to sort 10 players for match room.");
-        const faction1Players = data.slice(0, 5);
-        const faction2Players = data.slice(5, 10);
-        let myTeamPlayers = null;
-        let enemyTeamPlayers = null;
-
-        console.log("Extendo: Faction 1 Players:", faction1Players.map(p => ({ nickname: p.nickname, player_id: p.player_id })));
-        console.log("Extendo: Faction 2 Players:", faction2Players.map(p => ({ nickname: p.nickname, player_id: p.player_id })));
-
-        if (loggedInUserId) { // If we have a logged-in user ID
-            console.log(`Extendo: Checking factions for loggedInUserId: ${loggedInUserId}`);
-            const userInFaction1 = faction1Players.some(p => {
-                console.log(`Extendo: Faction 1: Comparing ${p.player_id} with ${loggedInUserId}`);
-                return p.player_id && p.player_id === loggedInUserId;
-            });
-            const userInFaction2 = faction2Players.some(p => {
-                console.log(`Extendo: Faction 2: Comparing ${p.player_id} with ${loggedInUserId}`);
-                return p.player_id && p.player_id === loggedInUserId;
-            });
-
-            console.log(`Extendo: User in Faction 1: ${userInFaction1}`);
-            console.log(`Extendo: User in Faction 2: ${userInFaction2}`);
-
-            if (userInFaction1) {
-                myTeamPlayers = faction1Players;
-                enemyTeamPlayers = faction2Players;
-                console.log("Extendo: User ID found in Faction 1. Faction 1 is My Team. Faction 2 is Enemy.");
-            } else if (userInFaction2) {
-                myTeamPlayers = faction2Players;
-                enemyTeamPlayers = faction1Players;
-                console.log("Extendo: User ID found in Faction 2. Faction 2 is My Team. Faction 1 is Enemy.");
-            } else {
-                console.log("Extendo: Logged-in user ID not found in either faction by player_id.");
-            }
-        } else {
-            console.log("Extendo: No loggedInUserId available for team sorting by ID.");
-        }
-
-        if (myTeamPlayers && enemyTeamPlayers) {
-            playersToProcess = [...enemyTeamPlayers, ...myTeamPlayers]; // Enemy team first, then user's team
-            console.log("Extendo: Teams sorted by ID for display. Enemy team on top row.");
-        } else {
-            console.log("Extendo: Logged-in user ID not identified in either faction for sorting, or data is not a 10-player match. Using default player order.");
-            // playersToProcess remains as the original 'data' copy if user not found or not 10 players.
-            // If it's 10 players but user not found, faction1Players will be top, faction2Players bottom by default.
-        }
-    } else if (Array.isArray(data)) {
-        // For non-10-player arrays, just use the data as is.
-        playersToProcess = [...data];
+async function handleApiResponse(response) {
+  if (!response.ok) {
+    let errorData;
+    try {
+        errorData = await response.json();
+    } catch (e) {
+        // Ignore if response is not JSON, rely on statusText
     }
-
-
-    if (playersToProcess.length > 0) {
-      console.log("Extendo: Processing player data for display:", playersToProcess);
-      
-      playersToProcess.forEach(p => { // Iterate over the (potentially reordered) playersToProcess
-        if (p.error) { // Handle partial failures for a specific player
-          playerCardsHtmlString += `
-            <div class="extendo-player-card extendo-faceit-banner-error">
-              <div class="extendo-player-header">
-                <h3>${p.nickname || 'Unknown Player'} - Error</h3>
-              </div>
-              <div class="extendo-error">
-                <p>${p.error}</p>
-                ${p.details ? `<p>${p.details}</p>` : ''}
-              </div>
-            </div>`;
-        } else if (p.nickname) { // Successful player data
-          const games = p.games || {};
-          const cs2 = games.cs2 || {};
-          const faceitElo = cs2.faceit_elo || p.faceit_elo || "N/A";
-          const skillLevel = cs2.skill_level || p.skill_level || "?";
-          const avatar = p.avatar || ""; 
-
-          playerCardsHtmlString += `
-          <div class="extendo-player-card">
-            <div class="extendo-player-header">
-              <img src='${avatar}' class="extendo-avatar" alt="${p.nickname}'s avatar">
-              <div class="extendo-player-info">
-                <h3>${p.nickname}</h3>
-                <div class="extendo-player-details">
-                  ${p.country ? `<span class="extendo-country">${p.country}</span>` : ''}
-                  <span class="extendo-level">Level ${skillLevel}</span>
-                  <span class="extendo-elo">Elo: ${formatNumber(faceitElo)}</span>
-                </div>
-              </div>
-            </div>`;
-
-          if (p.stats && p.stats.lifetime) {
-            const lifetimeStats = p.stats.lifetime;
-            playerCardsHtmlString += `
-            <div class="extendo-stats-section">
-              <h4>Lifetime Stats</h4>
-              <div class="extendo-stats-grid">
-                <div class="extendo-stat-box">
-                  <span class="stat-value">${formatNumber(lifetimeStats.Matches || lifetimeStats.matches || 0)}</span>
-                  <span class="stat-label">Matches</span>
-                </div>
-                <div class="extendo-stat-box">
-                  <span class="stat-value">${calculateWinRate(lifetimeStats.Wins || lifetimeStats.wins, lifetimeStats.Matches || lifetimeStats.matches)}</span>
-                  <span class="stat-label">Win Rate</span>
-                </div>
-                <div class="extendo-stat-box">
-                  <span class="stat-value">${lifetimeStats['K/D Ratio'] || lifetimeStats['K/D'] || lifetimeStats.kd || 'N/A'}</span>
-                  <span class="stat-label">K/D Ratio</span>
-                </div>
-                <div class="extendo-stat-box">
-                  <span class="stat-value">${p.adr || 'N/A'}</span>
-                  <span class="stat-label">ADR</span>
-                </div>
-              </div>
-            </div>`;
-          }
-
-          const mapStats = extractMapStats(p);
-          if (mapStats && mapStats.length > 0) {
-            playerCardsHtmlString += `
-            <div class="extendo-stats-section">
-              <h4>Map Performance</h4>
-              <div class="extendo-maps-table">
-                <table>
-                  <thead><tr><th>Map</th><th>Matches</th><th>Win %</th><th>K/D</th></tr></thead>
-                  <tbody>`;
-            mapStats.forEach(map => {
-              const mapName = map.label.replace('Map ', '');
-              const mapData = map.stats || {};
-              playerCardsHtmlString += `<tr>
-                    <td>${mapName}</td>
-                    <td>${formatNumber(mapData.Matches || mapData.matches || 0)}</td>
-                    <td>${calculateWinRate(mapData.Wins || mapData.wins, mapData.Matches || mapData.matches)}</td>
-                    <td>${mapData['Average K/D Ratio'] || mapData.kd || 'N/A'}</td>
-                  </tr>`;
-            });
-            playerCardsHtmlString += `</tbody></table></div></div>`;
-          }
-          
-          if (p.stats && p.stats.recent_results && p.stats.recent_results.length) {
-            const recentResults = p.stats.recent_results;
-            const wins = recentResults.filter(r => r === '1').length;
-            const losses = recentResults.length - wins;
-            playerCardsHtmlString += `
-            <div class="extendo-stats-section">
-              <h4>Recent Performance (Last ${recentResults.length})</h4>
-              <div class="extendo-recent-results">
-                <div class="extendo-stat-box">
-                  <span class="stat-value">${wins}W - ${losses}L</span>
-                  <span class="stat-label">Streak</span>
-                </div>
-                <div class="extendo-result-streak">`;
-            recentResults.slice(0, 10).forEach(result => {
-              playerCardsHtmlString += `<span class="result-dot result-${result === '1' ? 'win' : 'loss'}"></span>`;
-            });
-            playerCardsHtmlString += `</div></div></div>`;
-          }
-
-          playerCardsHtmlString += `
-          <div class="extendo-footer">
-            <a href='https://www.faceit.com/en/players/${p.nickname}' target='_blank' class="extendo-profile-link">View Full Profile</a>
-          </div>
-        </div>`; // End extendo-player-card
-        }
-      });
-
-      if (playerCardsHtmlString.trim() !== '') {
-        bannerHeaderHtml = `<div class="extendo-header"><h2>Faceit Player Stats</h2></div>`;
-        const totalCardsGenerated = (playerCardsHtmlString.match(/class="extendo-player-card/g) || []).length;
-        
-        if (totalCardsGenerated >= 5) { // Use grid for 5+ cards (typically 10 for match room)
-          bannerContentHtml = `<div class="extendo-player-cards-container">${playerCardsHtmlString}</div>`;
-        } else { // Use scroll for 1-4 cards
-          bannerContentHtml = `<div class="extendo-player-cards-scroll-container">${playerCardsHtmlString}</div>`;
-        }
-      } else {
-        // No valid player cards were generated from the data array
-        bannerHeaderHtml = `<div class="extendo-header"><h2>Extendo Stats</h2></div>`;
-        bannerContentHtml = `<div class="extendo-error"><i>No displayable player data from the server response.</i></div>`;
-      }
-
-    } else if (data && data.error) { // Backend returned a single error object for the whole request
-      bannerHeaderHtml = `<div class="extendo-header"><h2>Error</h2></div>`;
-      bannerContentHtml = `<div class="extendo-error">
-                <h3>Error from Backend</h3>
-                <p>${data.error}</p>
-                ${data.details ? `<p>${data.details}</p>` : ''}
-              </div>`;
-    } else { // No data, empty array, or unexpected format
-      bannerHeaderHtml = `<div class="extendo-header"><h2>Extendo Stats</h2></div>`;
-      bannerContentHtml = `<div class="extendo-error"><i>No player data found or unexpected response.</i></div>`;
-    }
-    
-    newBanner.innerHTML = bannerHeaderHtml + bannerContentHtml;
-    document.body.appendChild(newBanner);
-    addCloseButton(newBanner); // Add buttons to the new banner
-  });
-}
-
-// Helper function to handle API errors
-function handleApiError(err) {
-  console.error("Extendo: Error fetching player stats:", err);
+    const errorMessage = errorData?.error || errorData?.message || response.statusText || 'Unknown error';
+    throw new Error(`HTTP ${response.status} - ${errorMessage}`);
+  }
   
+  const data = await response.json();
+
   const loadingBanner = document.querySelector('.extendo-faceit-banner');
   if (loadingBanner && loadingBanner.parentNode) loadingBanner.remove();
   
-  const errorBanner = document.createElement("div");
-  errorBanner.className = "extendo-faceit-banner extendo-faceit-banner-error";
-  errorBanner.innerHTML = `
-    <div class="extendo-header">
-      <h2>Fetch Error</h2>
-    </div>
-    <div class="extendo-error">
-      <h3>Could not fetch player statistics</h3>
-      <p>Details: ${err.message}</p>
-      <p>Is the backend server running at http://localhost:5000 and responding correctly?</p>
-    </div>
-  `;
-  document.body.appendChild(errorBanner);
-  addCloseButton(errorBanner); // Add buttons to the error banner
+  const newBanner = document.createElement("div");
+  newBanner.className = "extendo-faceit-banner";
+  
+  let bannerHeaderHtml = '';
+  let bannerContentHtml = '';
+  
+  let myTeamPlayers = null; 
+  let enemyTeamPlayers = null; 
+  let playersToProcess = Array.isArray(data) ? [...data] : [];
+
+  const loggedInUserId = await getCurrentUserId();
+  console.log("Extendo: Logged-in user ID for team sorting:", loggedInUserId);
+
+  const robustSort = (a, b) => {
+    // Errors last
+    if (a.error && !b.error) return 1;
+    if (!a.error && b.error) return -1;
+    if (a.error && b.error) {
+        return (a.nickname || '').localeCompare(b.nickname || '');
+    }
+    // Non-errors:
+    const nickA = a.nickname || '';
+    const nickB = b.nickname || '';
+    return nickA.localeCompare(nickB);
+  };
+
+  if (Array.isArray(data) && data.length === 10) { 
+      console.log("Extendo: Attempting to assign teams for 10 players.");
+      const faction1Players = data.slice(0, 5);
+      const faction2Players = data.slice(5, 10);
+      
+      // Initialize to null, only set if user is positively identified
+      myTeamPlayers = null;
+      enemyTeamPlayers = null;
+
+      if (loggedInUserId) {
+          const userInFaction1 = faction1Players.some(p => p.player_id && p.player_id === loggedInUserId);
+          const userInFaction2 = faction2Players.some(p => p.player_id && p.player_id === loggedInUserId);
+
+          if (userInFaction1) {
+              myTeamPlayers = [...faction1Players]; 
+              enemyTeamPlayers = [...faction2Players];
+              console.log("Extendo: User ID found in Faction 1. My Team: Faction 1. Enemy: Faction 2.");
+          } else if (userInFaction2) {
+              myTeamPlayers = [...faction2Players]; 
+              enemyTeamPlayers = [...faction1Players];
+              console.log("Extendo: User ID found in Faction 2. My Team: Faction 2. Enemy: Faction 1.");
+          } else {
+              console.log("Extendo: Logged-in user ID not found in either faction. Generic display for 10 players.");
+              // playersToProcess (all 10) will be used by generic logic
+          }
+      } else {
+          console.log("Extendo: No loggedInUserId. Generic display for 10 players.");
+          // playersToProcess (all 10) will be used by generic logic
+      }
+      // If myTeamPlayers/enemyTeamPlayers are still null, it falls to generic display using playersToProcess
+  } else if (!Array.isArray(data)) { 
+      // Data is not an array (e.g. a single error object for the whole request)
+      console.log("Extendo: Data from API is not an array. Displaying error or no data message.");
+      playersToProcess = []; // Ensure playersToProcess is empty to trigger "no data" message
+      myTeamPlayers = null;
+      enemyTeamPlayers = null;
+      // If 'data' itself is an error object, it won't be processed as a player card.
+      // The 'No player data found to display' message will be shown.
+      // If the backend sent a 200 OK with { "error": "message" }, this is handled.
+  }
+  // If data is an array but not length 10, playersToProcess is already [...data] and teams are null.
+
+  if ((myTeamPlayers && enemyTeamPlayers) || (Array.isArray(playersToProcess) && playersToProcess.length > 0)) { 
+    console.log("Extendo: Processing player data. Teams identified:", !!(myTeamPlayers && enemyTeamPlayers), "Players to process:", playersToProcess.length);
+    
+    function generatePlayerCardHtml(player) {
+      if (!player) return '';
+      let cardHtml = '';
+      if (player.error) { 
+        cardHtml = `
+          <div class="extendo-player-card extendo-faceit-banner-error">
+            <div class="extendo-player-header">
+              <h3>${player.nickname || 'Unknown Player'} - Error</h3>
+            </div>
+            <div class="extendo-error">
+              <p>${player.error}</p>
+              ${player.details ? `<p>${player.details}</p>` : ''}
+            </div>
+          </div>`;
+      } else if (player.nickname) { 
+        const games = player.games || {};
+        const cs2 = games.cs2 || {};
+        const faceitElo = cs2.faceit_elo || player.faceit_elo || "N/A";
+        const skillLevel = cs2.skill_level || player.skill_level || "?";
+        const avatar = player.avatar || ""; 
+
+        cardHtml = `
+        <div class="extendo-player-card">
+          <div class="extendo-player-header">
+            <img src='${avatar}' class="extendo-avatar" alt="${player.nickname}'s avatar">
+            <div class="extendo-player-info">
+              <h3>${player.nickname}</h3>
+              <div class="extendo-player-details">
+                ${player.country ? `<span class="extendo-country">${player.country}</span>` : ''}
+                <span class="extendo-level">Level ${skillLevel}</span>
+                <span class="extendo-elo">Elo: ${formatNumber(faceitElo)}</span>
+              </div>
+            </div>
+          </div>`;
+
+        if (player.stats && player.stats.lifetime) {
+          const lifetimeStats = player.stats.lifetime;
+          cardHtml += `
+          <div class="extendo-stats-section">
+            <h4>Lifetime Stats</h4>
+            <div class="extendo-stats-grid">
+              <div class="extendo-stat-box">
+                <span class="stat-value">${formatNumber(lifetimeStats.Matches || lifetimeStats.matches || 0)}</span>
+                <span class="stat-label">Matches</span>
+              </div>
+              <div class="extendo-stat-box">
+                <span class="stat-value">${calculateWinRate(lifetimeStats.Wins || lifetimeStats.wins, lifetimeStats.Matches || lifetimeStats.matches)}</span>
+                <span class="stat-label">Win Rate</span>
+              </div>
+              <div class="extendo-stat-box">
+                <span class="stat-value">${lifetimeStats['K/D Ratio'] || lifetimeStats['K/D'] || lifetimeStats.kd || 'N/A'}</span>
+                <span class="stat-label">K/D Ratio</span>
+              </div>
+              <div class="extendo-stat-box">
+                <span class="stat-value">${player.adr || 'N/A'}</span>
+                <span class="stat-label">ADR</span>
+              </div>
+            </div>
+          </div>`;
+        }
+
+        const mapStats = extractMapStats(player);
+        if (mapStats && mapStats.length > 0) {
+          cardHtml += `
+          <div class="extendo-stats-section">
+            <h4>Map Performance</h4>
+            <div class="extendo-maps-table">
+              <table>
+                <thead><tr><th>Map</th><th>Matches</th><th>Win %</th><th>K/D</th></tr></thead>
+                <tbody>`;
+          mapStats.forEach(map => {
+            const mapName = map.label.replace('Map ', '');
+            const mapData = map.stats || {};
+            cardHtml += `<tr>
+                  <td>${mapName}</td>
+                  <td>${formatNumber(mapData.Matches || mapData.matches || 0)}</td>
+                  <td>${calculateWinRate(mapData.Wins || mapData.wins, mapData.Matches || mapData.matches)}</td>
+                  <td>${mapData['Average K/D Ratio'] || mapData.kd || 'N/A'}</td>
+                </tr>`;
+          });
+          cardHtml += `</tbody></table></div></div>`;
+        }
+        
+        if (player.stats && player.stats.recent_results && player.stats.recent_results.length) {
+          const recentResults = player.stats.recent_results;
+          const wins = recentResults.filter(r => r === '1').length;
+          const losses = recentResults.length - wins;
+          cardHtml += `
+          <div class="extendo-stats-section">
+            <h4>Recent Performance (Last ${recentResults.length})</h4>
+            <div class="extendo-recent-results">
+              <div class="extendo-stat-box">
+                <span class="stat-value">${wins}W - ${losses}L</span>
+                <span class="stat-label">Streak</span>
+              </div>
+              <div class="extendo-result-streak">`;
+          recentResults.slice(0, 10).forEach(result => {
+            cardHtml += `<span class="result-dot result-${result === '1' ? 'win' : 'loss'}"></span>`;
+          });
+          cardHtml += `</div></div></div>`;
+        }
+
+        cardHtml += `
+        <div class="extendo-footer">
+          <a href='https://www.faceit.com/en/players/${player.nickname}' target='_blank' class="extendo-profile-link">View Full Profile</a>
+        </div>
+      </div>`; 
+      }
+      return cardHtml;
+    } // End of generatePlayerCardHtml
+
+    bannerHeaderHtml = `<div class="extendo-header"><h2>Faceit Player Stats</h2></div>`;
+
+    if (myTeamPlayers && enemyTeamPlayers) { 
+        console.log("Extendo: Rendering two-row team display.");
+        enemyTeamPlayers.sort(robustSort);
+        myTeamPlayers.sort(robustSort);
+
+        let enemyTeamHtml = '';
+        enemyTeamPlayers.forEach(p => { enemyTeamHtml += generatePlayerCardHtml(p); });
+
+        let myTeamHtml = '';
+        myTeamPlayers.forEach(p => { myTeamHtml += generatePlayerCardHtml(p); });
+
+        if (enemyTeamHtml.trim() !== '' || myTeamHtml.trim() !== '') { 
+          bannerContentHtml = `
+            <div class="extendo-teams-container">
+              ${enemyTeamHtml.trim() !== '' ? `<div class="extendo-team-row">${enemyTeamHtml}</div>` : ''}
+              ${myTeamHtml.trim() !== '' ? `<div class="extendo-team-row">${myTeamHtml}</div>` : ''}
+            </div>
+          `;
+        } else {
+          console.warn("Extendo: Both team HTMLs empty after processing. Fallback to generic display.");
+          myTeamPlayers = null; // Force fallback to generic display logic
+          enemyTeamPlayers = null;
+          // playersToProcess (which is all 10 players if this path was reached from 10 player data) will be handled by the next block.
+        }
+    } 
+    
+    // This block handles generic display OR fallback from empty team display
+    if (!(myTeamPlayers && enemyTeamPlayers)) { 
+        console.log("Extendo: Rendering generic grid/scroll display.");
+        
+        if (Array.isArray(playersToProcess) && playersToProcess.length > 0) {
+            playersToProcess.sort(robustSort);
+        }
+
+        let genericPlayerCardsHtml = '';
+        playersToProcess.forEach(p => { genericPlayerCardsHtml += generatePlayerCardHtml(p); });
+
+        if (genericPlayerCardsHtml.trim() !== '') {
+          const totalCardsGenerated = (genericPlayerCardsHtml.match(/class="extendo-player-card/g) || []).length;
+          if (totalCardsGenerated >= 5) { 
+            bannerContentHtml = `<div class="extendo-player-cards-container">${genericPlayerCardsHtml}</div>`;
+          } else { 
+            bannerContentHtml = `<div class="extendo-player-cards-scroll-container">${genericPlayerCardsHtml}</div>`;
+          }
+        } else {
+          // This means no player cards were generated from playersToProcess
+          bannerHeaderHtml = `<div class="extendo-header"><h2>Extendo Stats</h2></div>`;
+          bannerContentHtml = `<div class="extendo-error"><i>No displayable player data from the server response.</i></div>`;
+        }
+    }
+  } else { 
+    // This 'else' means:
+    // 1. Not a 10 player match where user was identified (myTeamPlayers/enemyTeamPlayers are null)
+    // AND
+    // 2. playersToProcess is not an array or is an empty array.
+    bannerHeaderHtml = `<div class="extendo-header"><h2>Extendo Stats</h2></div>`;
+    bannerContentHtml = `<div class="extendo-error"><i>No player data found to display. Check if the page contains player information or if you are in a match room.</i></div>`;
+    console.log("Extendo: No teams identified and playersToProcess is empty or not an array. Displaying 'No data'.");
+  }
+
+  newBanner.innerHTML = bannerHeaderHtml + bannerContentHtml;
+  
+  // Ensure only one banner exists
+  const existingBanner = document.querySelector('.extendo-faceit-banner');
+  if (existingBanner) existingBanner.remove();
+  
+  document.body.appendChild(newBanner);
+  addCloseButton(newBanner);
+}
+
+// NEW or UPDATED: handleApiError function
+async function handleApiError(error) {
+    console.error("Extendo: API or Processing Error:", error);
+    
+    // Ensure any existing banner (especially loading) is removed or replaced
+    removeExistingBanner();
+
+    const errorBanner = document.createElement("div");
+    errorBanner.className = "extendo-faceit-banner"; // Use the same class for consistent styling/removal
+
+    let errorMessageText = 'An unknown error occurred.';
+    if (error instanceof Error) {
+        errorMessageText = error.message;
+    } else if (typeof error === 'string') {
+        errorMessageText = error;
+    }
+
+    errorBanner.innerHTML = `
+      <div class="extendo-header">
+        <h2>Extendo Stats - Error</h2>
+      </div>
+      <div class="extendo-error">
+        <p>Failed to load or process player statistics.</p>
+        <p><i>${errorMessageText}</i></p>
+      </div>
+    `;
+    document.body.appendChild(errorBanner);
+    addCloseButton(errorBanner); // Add close/minimize to the error banner
 }
