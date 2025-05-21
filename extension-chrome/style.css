@@ -23,9 +23,10 @@
 .extendo-faceit-banner {
   position: fixed;
   bottom: 0;
+  left: 0;
   right: 0;
-  width: 350px;
-  max-height: 85vh;
+  width: 100%;
+  max-height: 40vh;
   overflow-y: auto;
   background: var(--extendo-bg-dark);
   color: var(--extendo-text);
@@ -33,8 +34,8 @@
   font-size: 15px;
   line-height: 1.45;
   font-family: 'Inter', 'Roboto', 'Arial', sans-serif;
-  box-shadow: 0 2px 15px rgba(0,0,0,0.4);
-  border-radius: 8px 0 0 0;
+  box-shadow: 0 -2px 15px rgba(0,0,0,0.4);
+  border-radius: 8px 8px 0 0;
   padding: 0;
   box-sizing: border-box;
 }
@@ -46,18 +47,57 @@
 
 .extendo-header {
   background: var(--extendo-primary);
-  padding: 10px 15px;
+  padding: 8px 15px;
   text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .extendo-header h2 {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 600;
 }
 
+/* Container for player cards - for GRID layout (5+ players) */
+.extendo-player-cards-container {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr); /* 5 columns */
+  grid-template-rows: auto auto; /* 2 rows for up to 10 players */
+  gap: 10px; /* Spacing between cards */
+  padding: 10px;
+  overflow-y: auto; /* Allow vertical scroll if content overflows max-height */
+  /* max-height: calc(40vh - 50px); /* Adjust based on header height, ensure this is appropriate */
+  /* The max-height of the banner itself will constrain this, so direct max-height here might be redundant or can be more specific if needed */
+}
+
+/* Container for player cards - for HORIZONTAL SCROLL layout (1-4 players) */
+.extendo-player-cards-scroll-container {
+  display: flex;
+  overflow-x: auto;
+  padding: 10px;
+  scroll-behavior: smooth;
+  flex-wrap: nowrap;
+  gap: 10px; /* Spacing between cards */
+}
+
 .extendo-player-card {
-  padding: 0;
+  background: var(--extendo-bg-light);
+  border-radius: 6px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  display: flex; /* Use flex for internal layout of card */
+  flex-direction: column; /* Stack card content vertically */
+  min-width: 0; /* Prevent overflow issues in grid cells */
+}
+
+/* Specific styling for cards within the scroll container to give them a sensible width */
+.extendo-player-cards-scroll-container .extendo-player-card {
+  width: 300px; /* Or a percentage like 45% if you expect max 2-3, adjust as needed */
+  flex-shrink: 0; /* Prevent cards from shrinking in flex container */
 }
 
 .extendo-player-header {
@@ -66,6 +106,7 @@
   padding: 15px;
   background: var(--extendo-bg-light);
   border-bottom: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px 6px 0 0;
 }
 
 .extendo-avatar {
@@ -243,7 +284,7 @@
   background: #a00;
   color: #fff;
   padding: 15px;
-  width: 300px;
+  max-height: 200px;
 }
 
 .extendo-error h3 {
@@ -257,4 +298,56 @@
   padding: 10px;
   border-radius: 4px;
   overflow-x: auto;
+}
+
+/* DEPRECATED: Container for player cards in the footer layout - replaced by .extendo-player-cards-container */
+/* .extendo-header + div, .extendo-header + * {
+  display: flex;
+  overflow-x: auto;
+  padding: 5px;
+  scroll-behavior: smooth;
+  flex-wrap: nowrap;
+} */
+
+/* Styles for the close button we'll add later */
+.extendo-close-button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 5px;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.extendo-close-button:hover {
+  opacity: 1;
+}
+
+/* Add a minimize/maximize toggle button */
+.extendo-toggle-button {
+  background: var(--extendo-primary);
+  color: white;
+  border: none;
+  border-radius: 4px 4px 0 0;
+  position: absolute;
+  top: -25px;
+  right: 20px;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-size: 12px;
+  box-shadow: 0 -2px 5px rgba(0,0,0,0.2);
+}
+
+/* Style for when the footer is minimized */
+.extendo-faceit-banner.minimized {
+  max-height: 40px;
+  overflow: hidden;
+}
+
+.extendo-faceit-banner.minimized .extendo-header h2:after {
+  content: " (Minimized)";
+  font-size: 0.8em;
+  opacity: 0.8;
 }
