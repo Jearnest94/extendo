@@ -22,7 +22,14 @@
   "content_scripts": [
     {
       "matches": ["https://api.faceit.com/*", "https://www.faceit.com/*"],
-      "js": ["src/utils.js", "src/content.js"]
+      "js": [
+        "src/utils.js",
+        "src/dom_utils.js",
+        "src/data_utils.js",
+        "src/page_interaction.js",
+        "src/api_handler.js",
+        "src/content.js"
+      ]
     }
   ],
   "web_accessible_resources": [

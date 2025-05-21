@@ -2,7 +2,7 @@
 from datetime import datetime
 from pathlib import Path
 
-EXCLUDE = {".git", "__pycache__", "node_modules", ".venv", ".pytest_cache"}
+EXCLUDE = {".git", "__pycache__", "node_modules", ".venv", ".pytest_cache", "venv"}
 
 
 def walk(base: Path, prefix: str = "") -> None:

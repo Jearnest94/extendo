@@ -128,29 +128,18 @@ def get_player_data_by_id(fc: FaceitClient, player_id: str, nickname: str) -> di
 
 # Route implementations
 def player_stats():
-    """
-    Endpoint for fetching player statistics by nicknames.
-    Accepts GET (legacy, space-separated nicknames) or POST (JSON body with 'players' list).
-    """
-    logger.info(f"Request to /api/player-stats. Method: {request.method}. Headers: {dict(request.headers)}")
-    player_nicknames = []
-    if request.method == 'GET':
-        nicknames_str = request.args.get("nicknames", "")
-        if nicknames_str:
-            player_nicknames = [name.strip() for name in nicknames_str.split(" ") if name.strip()]
-        logger.info(f"GET request with nicknames: {player_nicknames}")
-    elif request.method == 'POST':
-        data = request.get_json()
-        if data and "players" in data and isinstance(data["players"], list):
-            player_nicknames = [str(name).strip() for name in data["players"] if str(name).strip()]
-            logger.info(f"POST request with players: {player_nicknames}")
-        else:
-            logger.warning("POST request to player-stats missing 'players' list or invalid format.")
-            return jsonify({"error": "Invalid request body. 'players' list is required."}), 400
-    
-    if not player_nicknames:
-        logger.warning("player-stats called with no player nicknames.")
+    logger.info(f"[player_stats (now /api/prematch)] Request received. Headers: {dict(request.headers)}") # Updated log
+    data = request.get_json()
+    if not data or "players" not in data:
+        logger.warning(f"[player_stats (now /api/prematch)] No player nicknames provided in request data.")
         return jsonify({"error": "No player nicknames provided"}), 400
+    
+    player_nicknames = [str(name).strip() for name in data["players"] if str(name).strip()]
+    if not player_nicknames:
+        logger.warning(f"[player_stats (now /api/prematch)] No valid player nicknames found in request data.")
+        return jsonify({"error": "No valid player nicknames provided"}), 400
+
+    logger.info(f"[player_stats (now /api/prematch)] Processing player nicknames: {player_nicknames}")
     
     fc = FaceitClient()
     all_player_data = []
@@ -176,21 +165,18 @@ def player_stats():
         # This case might indicate all lookups failed before returning structured errors
         return jsonify({"error": "Failed to process any players"}), 500 
     
-    logger.info(f"[player_stats] Successfully processed {len(all_player_data)} players (including potential errors).")
+    logger.info(f"[player_stats (now /api/prematch)] Successfully processed {len(all_player_data)} players (including potential errors).") # Updated log
     return jsonify(all_player_data)
 
+# Renamed from prematch to legacy_prematch_info to avoid conflict with new prematch
+def legacy_prematch_info():
+    """Legacy endpoint, uses player_stats logic (which is now the new prematch)."""
+    logger.info(f"[legacy_prematch_info] /api/prematch-info called. Headers: {dict(request.headers)}. Forwarding to new prematch logic.")
+    return player_stats() # player_stats is the new /api/prematch
 
-def prematch():
-    """Legacy endpoint, redirects to player_stats (conceptually, actual call)."""
-    logger.info(f"[prematch] Legacy endpoint called. Headers: {dict(request.headers)}. Forwarding to player_stats logic.")
-    # This doesn't do a formal redirect, but reuses the logic.
-    # For a true redirect, you'd use Flask's redirect() but that changes the request type for POST.
-    # Given the client expects player_stats's response, directly calling is fine.
-    return player_stats()
-
-# New route for match room stats by match_id
-def match_room_stats(match_id: str):
-    logger.info(f"Request to /api/match-room-stats/{match_id}. Headers: {dict(request.headers)}")
+# Renamed from match_room_stats to match_insight
+def match_insight(match_id: str):
+    logger.info(f"[match_insight (was /api/match-room-stats)] Request to /api/match-insight/{match_id}. Headers: {dict(request.headers)}") # Updated log
     fc = FaceitClient()
     
     try:
@@ -268,7 +254,7 @@ def match_room_stats(match_id: str):
                     "details": "Original fetch might have failed or data structure was unexpected."
                 })
 
-    logger.info(f"[match_room_stats] Successfully processed and ordered {len(ordered_player_data)} players for match {match_id}.")
+    logger.info(f"[match_insight (was /api/match-room-stats)] Successfully processed and ordered {len(ordered_player_data)} players for match {match_id}.") # Updated log
     return jsonify(ordered_player_data)
 
 
@@ -306,13 +292,14 @@ def create_app():
 
     # Add routes
     app.add_url_rule("/api/health", view_func=health, methods=["GET"])
-    app.add_url_rule("/api/player-stats", view_func=player_stats, methods=["GET", "POST"])
-    app.add_url_rule("/api/prematch-info", view_func=prematch, methods=["GET", "POST"]) # Legacy, uses player_stats logic
-    app.add_url_rule("/api/match-room-stats/<match_id>", view_func=match_room_stats, methods=["GET"])
-    # The old match_room function is not registered as it's superseded by match_room_stats
-    # If _enrich_teams is part of another feature, its route would be here.
+    # Renamed routes to align with blueprint
+    app.add_url_rule("/api/prematch", view_func=player_stats, methods=["GET", "POST"]) # Was /api/player-stats
+    app.add_url_rule("/api/match-insight/<match_id>", view_func=match_insight, methods=["GET"]) # Was /api/match-room-stats/<match_id>
+    
+    # Keep legacy /api/prematch-info pointing to the old logic (which is now the new /api/prematch)
+    app.add_url_rule("/api/prematch-info", view_func=legacy_prematch_info, methods=["GET", "POST"])
 
-    logger.info("Flask app created and routes registered.")
+    logger.info("Flask app created and routes registered with blueprint alignment.")
     return app
 
 # For running with `python -m app.main` directly (though gunicorn/flask run is preferred)

@@ -55,6 +55,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  cursor: pointer; /* Indicates the header is clickable for toggle */
 }
 
 .extendo-header h2 {
@@ -325,7 +326,7 @@
   opacity: 1;
 }
 
-/* Add a minimize/maximize toggle button */
+/* REMOVED .extendo-toggle-button styles as it's no longer used
 .extendo-toggle-button {
   background: var(--extendo-primary);
   color: white;
@@ -339,6 +340,7 @@
   font-size: 12px;
   box-shadow: 0 -2px 5px rgba(0,0,0,0.2);
 }
+*/
 
 /* Style for when the footer is minimized */
 .extendo-faceit-banner.minimized {
