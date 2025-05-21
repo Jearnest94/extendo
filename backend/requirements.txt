@@ -11,3 +11,6 @@ responses
 pymongo
 awpy
 zstandard
+cloudscraper
+selenium
+undetected-chromedriver
