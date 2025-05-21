@@ -9,3 +9,5 @@ black
 faceit
 responses
 pymongo
+awpy
+zstandard

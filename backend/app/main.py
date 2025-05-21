@@ -8,6 +8,7 @@ from flask_cors import CORS
 from .faceit import FaceitClient, FaceitHTTPError
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from . import aggregators # For ADR calculation
+from . import demo_parser # ADDED: Import the new demo_parser module
 
 # Configure logging
 # Ensure this doesn't conflict with other logging configurations if they exist elsewhere.
@@ -284,6 +285,33 @@ def health(): # Added health check for consistency
     logger.info("Health check successful")
     return jsonify({"status": "ok"})
 
+# NEW Route for Demo Parsing
+def parse_demo_endpoint():
+    data = request.get_json()
+    if not data or "demo_url" not in data:
+        logger.warning("[parse_demo_endpoint] No demo_url provided in request.")
+        return jsonify({"error": "demo_url not provided"}), 400
+    
+    demo_url = data["demo_url"]
+    logger.info(f"[parse_demo_endpoint] Received request to parse demo from URL: {demo_url}")
+    
+    # Potentially, you might want to make this an async task if parsing is long.
+    # For now, direct call.
+    result = demo_parser.parse_demo_from_url(demo_url)
+    
+    if "error" in result:
+        logger.error(f"[parse_demo_endpoint] Error parsing demo {demo_url}: {result['error']} - {result.get('details')}")
+        # Determine appropriate status code based on error type if possible
+        status_code = 500 # Default to internal server error
+        if "download" in result["error"].lower():
+            status_code = 400 # Or 502 if it's a remote server issue we can't control
+        elif "parse" in result["error"].lower():
+            status_code = 422 # Unprocessable Entity if demo is corrupt/invalid
+        return jsonify(result), status_code
+        
+    logger.info(f"[parse_demo_endpoint] Successfully processed demo: {demo_url}")
+    return jsonify(result), 200
+
 def create_app():
     app = Flask(__name__)
     app.debug = os.environ.get("FLASK_ENV") == "development"
@@ -299,7 +327,10 @@ def create_app():
     # Keep legacy /api/prematch-info pointing to the old logic (which is now the new /api/prematch)
     app.add_url_rule("/api/prematch-info", view_func=legacy_prematch_info, methods=["GET", "POST"])
 
-    logger.info("Flask app created and routes registered with blueprint alignment.")
+    # ADDED: Route for demo parsing
+    app.add_url_rule("/api/parse-demo", view_func=parse_demo_endpoint, methods=["POST"])
+
+    logger.info("Flask app created and routes registered with blueprint alignment. Demo parsing route added.")
     return app
 
 # For running with `python -m app.main` directly (though gunicorn/flask run is preferred)
