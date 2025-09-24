@@ -1,3 +1,8 @@
+# IMPORTANT
+A lot of this codebase is old/scraped ideas. This project turned out to be a dry-run of sort for "extendo-reborn", which is my next project where I've cherry-picked the good stuff from this repository. I'm leaving this here and public if anyone want's to nose around for ideas, **but it is not in a state to publish for consumers.**
+
+# ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+
 <img src="EXTENDO.png" alt="Extendo banner" height="350">
 
 
@@ -68,4 +73,3 @@ _Anything not in that table is aspirational marketing and will 404 if you look f
     python -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt
     pre-commit install – lint before you commit.
 
-Ship data-driven smack-talk, not guesswork. PRs welcome.
